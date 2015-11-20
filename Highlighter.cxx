@@ -48,7 +48,7 @@ Highlighter::Highlighter(QTextDocument *parent)
     HighlightingRule rule;
 
     qmacroFormat.setForeground(Qt::darkBlue);
-    rule.pattern = QRegExp("\\bQ[A-Z_]+\\b");
+    rule.pattern = QRegExp("\\bQ[A-Z0-9_]+\\b");
     rule.format = qmacroFormat;
     highlightingRules.append(rule);
 
