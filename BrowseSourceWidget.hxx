@@ -9,13 +9,14 @@
 #include <QLineEdit>
 #include <QListView>
 #include <QStackedWidget>
-#include <QProcess>
+#include <QSplitter>
 
 #include "Highlighter.hxx"
 #include "SourceFileSystemModel.hxx"
 #include "SourceFileSystemProxyModel.hxx"
 #include "OpenDocumentsModel.hxx"
 #include "CodeEditor.hxx"
+#include "NoteRichTextEdit.hxx"
 
 class BrowseSourceWidget: public QWidget {
   Q_OBJECT
@@ -28,10 +29,11 @@ public slots:
 
 protected:
   void keyReleaseEvent(QKeyEvent* p_event) override;
+  void getNotesFileInfo(const QString& fileName);
+  void saveNotesFromSource();
 
 protected slots:
   void searchFiles(QString const& p_fileName);
-  void setRootPathToModel(QString const& p_rootPath);
   void openSourceCode(QModelIndex const& p_index);
   void openSourceCodeFromOpenDocuments(QModelIndex const& p_index);
   void sortOpenDocuments(QModelIndex, int, int);
@@ -41,8 +43,11 @@ private:
   void openDocumentInEditor(QString const& fileName, QString const& absoluteFilePath);
   void initSourceSearchModel();
   void fillSourceModelFromDirectory(QString const& p_directoryName);
+  void openNotesFromSource(QString const& fileName);
 
   CodeEditor* m_sourcesEditor;
+  NoteRichTextEdit* m_notesTextEdit;
+  QSplitter* m_sourcesNoteSplitter;
 
   SourceFileSystemModel* m_sourceModel;
   QTreeView* m_sourcesTreeView;
@@ -65,7 +70,9 @@ private:
   QListView* m_openDocumentsView;
   QSortFilterProxyModel* m_openDocumentsProxyModel;
 
-  QProcess* m_process;
+  bool m_notesExist;
+  QFileInfo m_notesFileInfo;
+  QString m_notesFilePath;
 };
 
 #endif // BROWSESOURCEWIDGET_HXX

@@ -6,13 +6,17 @@
 #include <QTextStream>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QAction>
 #include <QDebug>
 
 #include "CodeEditor.hxx"
 
 BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   QWidget(p_parent),
-  m_highlighters() {
+  m_highlighters(),
+  m_notesExist(false),
+  m_notesFileInfo(),
+  m_notesFilePath() {
 
   // Source editor
   m_sourcesEditor = new CodeEditor(this);
@@ -26,6 +30,29 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   m_sourcesEditor->setReadOnly(true);
   m_sourcesEditor->setTextInteractionFlags(m_sourcesEditor->textInteractionFlags() | Qt::TextSelectableByKeyboard);
   m_highlighters.append(new Highlighter(m_sourcesEditor->document()));
+
+  // Note Text Edit
+  m_notesTextEdit = new NoteRichTextEdit(this);
+
+  // Edit Notes ON
+  QAction* editNotesOnAction = new QAction(this);
+  editNotesOnAction->setShortcut(QKeySequence("CTRL+E,3"));
+  addAction(editNotesOnAction);
+  connect(editNotesOnAction, SIGNAL(triggered()), m_notesTextEdit, SLOT(show()));
+
+  // Edit Notes OFF
+  QAction* editNotesOffAction = new QAction(this);
+  editNotesOffAction->setShortcut(QKeySequence("CTRL+E,1"));
+  addAction(editNotesOffAction);
+  connect(editNotesOffAction, SIGNAL(triggered()), m_notesTextEdit, SLOT(hide()));
+
+  // Sources and Notes Splitter
+  m_sourcesNoteSplitter = new QSplitter;
+  m_sourcesNoteSplitter->addWidget(m_sourcesEditor);
+  m_sourcesNoteSplitter->addWidget(m_notesTextEdit);
+  m_sourcesNoteSplitter->setStretchFactor(0, 1);
+  m_sourcesNoteSplitter->setStretchFactor(1, 0);
+  m_notesTextEdit->hide();
 
   // Settings
   QSettings settings("ValentinMicheletINC", "QtSourceBrowser");
@@ -47,7 +74,6 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
 
   // File System Model
   m_sourceModel = new SourceFileSystemModel(this);
-  connect(m_sourceModel, SIGNAL(rootPathChanged(QString)), this, SLOT(setRootPathToModel(QString)));
   m_sourceRootIndex = m_sourceModel->setRootPath(m_rootDirectoryName);
 
   // Source Tree View
@@ -102,15 +128,13 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   // Main part
   QSplitter* hsplitter = new QSplitter;
   hsplitter->addWidget(vsplitter);
-  hsplitter->addWidget(m_sourcesEditor);
+  hsplitter->addWidget(m_sourcesNoteSplitter);
   hsplitter->setStretchFactor(0, 0);
   hsplitter->setStretchFactor(1, 1);
 
   // Main layout
   QHBoxLayout* mainLayout = new QHBoxLayout;
   mainLayout->addWidget(hsplitter);
-  mainLayout->setStretch(0, 0);
-  mainLayout->setStretch(1, 1);
 
   setLayout(mainLayout);
 }
@@ -179,11 +203,6 @@ void BrowseSourceWidget::searchFiles(QString const& p_fileName)
   m_proxyModel->setFilterRegExp(p_fileName);
 }
 
-void BrowseSourceWidget::setRootPathToModel(const QString& p_rootPath)
-{
-  qDebug() << p_rootPath;
-}
-
 void BrowseSourceWidget::openSourceCode(QModelIndex const& p_index)
 {
   QString fileName(p_index.data().toString());
@@ -233,6 +252,9 @@ void BrowseSourceWidget::openDocumentInEditor(QString const& fileName, QString c
   m_sourcesEditor->setPlainText(getSourceContent(absoluteFilePath));
   QModelIndex openIndex = m_openDocumentsProxyModel->mapFromSource(m_openDocumentsModel->indexFromFile(fileName, absoluteFilePath));
   m_openDocumentsView->setCurrentIndex(openIndex);
+
+  saveNotesFromSource();
+  openNotesFromSource(fileName);
 }
 
 QString BrowseSourceWidget::getSourceContent(QString const& absoluteFilePath)
@@ -275,5 +297,47 @@ void BrowseSourceWidget::fillSourceModelFromDirectory(QString const& p_directory
   for (QString const& subDirectory: subDirectories)
   {
     fillSourceModelFromDirectory(p_directoryName+QDir::separator()+subDirectory);
+  }
+}
+
+void BrowseSourceWidget::saveNotesFromSource()
+{
+  if (m_notesFilePath.isEmpty())
+    return;
+
+  QFile noteFile(m_notesFilePath);
+  if (!noteFile.open(QIODevice::WriteOnly | QIODevice::Text))
+    QMessageBox::warning(this, "Writting issue", noteFile.errorString());
+
+  QTextStream in(&noteFile);
+
+  in << m_notesTextEdit->toHtml();
+
+  noteFile.close();
+}
+
+void BrowseSourceWidget::getNotesFileInfo(QString const& fileName)
+{
+  QString notesFileName = fileName;
+  notesFileName.replace(QRegExp("(\\.cpp$|\\.h$|_p\\.h$)"), ".txt");
+
+  m_notesFileInfo = QFileInfo("../QtSourceCodeBrowser/notes/"+notesFileName);
+  m_notesFilePath = m_notesFileInfo.absoluteFilePath();
+}
+
+void BrowseSourceWidget::openNotesFromSource(QString const& fileName)
+{
+  QFileInfo previousFileInfo = m_notesFileInfo;
+  getNotesFileInfo(fileName);
+
+  if (previousFileInfo == m_notesFileInfo)
+    return;
+
+  m_notesTextEdit->setText("");
+
+  m_notesExist = m_notesFileInfo.exists();
+  if (m_notesExist)
+  {
+    m_notesTextEdit->setText(getSourceContent(m_notesFilePath));
   }
 }

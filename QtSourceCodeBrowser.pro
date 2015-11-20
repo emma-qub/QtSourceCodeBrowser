@@ -6,12 +6,9 @@ SOURCES += \
     CodeEditor.cxx \
     SourceFileSystemModel.cxx \
     SourceFileSystemProxyModel.cxx \
-    OpenDocumentsModel.cxx
-
-QT += \
-    widgets \
-
-CONFIG += c++11
+    OpenDocumentsModel.cxx \
+    NoteTextEdit.cxx \
+    NoteRichTextEdit.cxx
 
 HEADERS += \
     MainWindow.hxx \
@@ -20,4 +17,14 @@ HEADERS += \
     CodeEditor.hxx \
     SourceFileSystemModel.hxx \
     SourceFileSystemProxyModel.hxx \
-    OpenDocumentsModel.hxx
+    OpenDocumentsModel.hxx \
+    NoteTextEdit.hxx \
+    NoteRichTextEdit.hxx
+
+FORMS += \
+    NoteRichTextEdit.ui
+
+QT += \
+    widgets \
+
+CONFIG += c++11
