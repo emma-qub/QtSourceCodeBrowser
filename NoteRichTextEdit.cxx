@@ -606,26 +606,32 @@ void NoteRichTextEdit::insertCode(bool checked) {
     cursor.select(QTextCursor::BlockUnderCursor);
     QString selectedText = cursor.selection().toPlainText();
     cursor.removeSelectedText();
-    cursor.insertText(selectedText.replace(QRegExp("\\s+\\n"), "\n").remove(QRegExp("\\s+$")));
+    cursor.insertText(selectedText.replace(QRegExp("(\\s+_)*\\s+\\n\\s{2}"), "\n").remove(QRegExp("\\s+$")));
   } else {
     if (cursor.selection().isEmpty())
       cursor.select(QTextCursor::LineUnderCursor);
 
     QStringList codePlainTextStringList = cursor.selection().toPlainText().split("\n");
-    int maxLineLength = 0;
-    for (QString const& currentLine: codePlainTextStringList) {
-      maxLineLength = qMax(maxLineLength, currentLine.size());
-    }
+    codePlainTextStringList.prepend("_");
+    codePlainTextStringList.append(" ");
+    int maxLineLength = 80;
     for (int k = 0; k < codePlainTextStringList.size(); ++k) {
       QString currentLine = codePlainTextStringList.at(k);
+      currentLine.prepend("  ");
       while (currentLine.size() < maxLineLength)
         currentLine.append(" ");
       codePlainTextStringList.replace(k, currentLine);
     }
-    QString codeInHtml = "<code style=\"font-family: mono; background-color: #000; color: #FFF;\">"+codePlainTextStringList.join("\n").replace("<", "&lt;").replace(" ", "&nbsp;").replace("\n", "<br/>")+"</div>";
+    QString codeInHtml = "<span style=\"font-family: mono; background-color: #404244; color: #FFFFFF;\">"+codePlainTextStringList.join("\n").replace("<", "&lt;").replace(" ", "&nbsp;").replace("\n", "<br/>")+"</span>";
+    QRegExp qtWords("\\bQ[A-Za-z]+\\b");
+    qtWords.setMinimal(true);
+    int i = -1;
+    while ((i = qtWords.indexIn(codeInHtml, i+1)) >= 0) {
+      codeInHtml.replace(i, qtWords.cap(0).length(), "<span style=\"font-weight: bold; color: #5CAA15;\">"+qtWords.cap(0)+"</span>");
+      i += qtWords.cap(0).length()+58;
+    }
     cursor.removeSelectedText();
     cursor.insertHtml(codeInHtml);
-    cursor.blockFormat().setProperty(1000, "Code");
   }
   cursor.endEditBlock();
 }
