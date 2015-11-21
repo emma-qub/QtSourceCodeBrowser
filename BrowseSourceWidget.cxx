@@ -80,6 +80,7 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
 
   // Search line edit
   m_searchLineEdit = new QLineEdit;
+  m_searchLineEdit->setPlaceholderText("Source file");
   connect(m_searchLineEdit, SIGNAL(textChanged(QString)), this, SLOT(searchFiles(QString)));
 
   // File System Model
@@ -199,12 +200,12 @@ void BrowseSourceWidget::keyReleaseEvent(QKeyEvent* p_event) {
 }
 
 void BrowseSourceWidget::searchFiles(QString const& p_fileName) {
-  if (p_fileName.isEmpty() && m_sourcesStackedWidget->currentWidget() != m_sourcesTreeView)
+  if (p_fileName.isEmpty() && m_sourcesStackedWidget->currentWidget() != m_sourcesTreeView) {
     m_sourcesStackedWidget->setCurrentWidget(m_sourcesTreeView);
-  else if (!p_fileName.isEmpty() && m_sourcesStackedWidget->currentWidget() != m_sourceSearchView)
+  } else if (!p_fileName.isEmpty() && m_sourcesStackedWidget->currentWidget() != m_sourceSearchView) {
     m_sourcesStackedWidget->setCurrentWidget(m_sourceSearchView);
+  }
 
-  m_proxyModel->setSortCaseSensitivity(Qt::CaseInsensitive);
   m_proxyModel->setFilterRegExp(p_fileName);
 }
 

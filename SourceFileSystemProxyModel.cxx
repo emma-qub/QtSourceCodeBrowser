@@ -7,6 +7,9 @@
 SourceFileSystemProxyModel::SourceFileSystemProxyModel(QModelIndex const& p_rootIndex, QObject* parent) :
   QSortFilterProxyModel(parent),
   m_rootIndex(p_rootIndex) {
+
+
+  setFilterCaseSensitivity(Qt::CaseInsensitive);
 }
 
 bool SourceFileSystemProxyModel::filterAcceptsRow(
