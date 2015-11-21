@@ -38,6 +38,7 @@
 #include <QPlainTextEdit>
 #include <QMenu>
 #include <QDialog>
+#include <QTextDocumentFragment>
 
 NoteRichTextEdit::NoteRichTextEdit(QWidget *parent) : QWidget(parent) {
     setupUi(this);
@@ -444,28 +445,28 @@ void NoteRichTextEdit::mergeFormatOnWordOrSelection(const QTextCharFormat &forma
 }
 
 void NoteRichTextEdit::slotCursorPositionChanged() {
-    QTextList *l = f_textedit->textCursor().currentList();
-    if (m_lastBlockList && (l == m_lastBlockList || (l != 0 && m_lastBlockList != 0
-                                 && l->format().style() == m_lastBlockList->format().style()))) {
-        return;
-        }
-    m_lastBlockList = l;
-    if (l) {
-        QTextListFormat lfmt = l->format();
-        if (lfmt.style() == QTextListFormat::ListDisc) {
-            f_list_bullet->setChecked(true);
-            f_list_ordered->setChecked(false);
-          } else if (lfmt.style() == QTextListFormat::ListDecimal) {
-            f_list_bullet->setChecked(false);
-            f_list_ordered->setChecked(true);
-          } else {
-            f_list_bullet->setChecked(false);
-            f_list_ordered->setChecked(false);
-            }
-      } else {
-        f_list_bullet->setChecked(false);
-        f_list_ordered->setChecked(false);
-        }
+  QTextList *l = f_textedit->textCursor().currentList();
+  if (m_lastBlockList && (l == m_lastBlockList || (l != 0 && m_lastBlockList != 0
+                               && l->format().style() == m_lastBlockList->format().style()))) {
+    return;
+  }
+  m_lastBlockList = l;
+  if (l) {
+    QTextListFormat lfmt = l->format();
+    if (lfmt.style() == QTextListFormat::ListDisc) {
+      f_list_bullet->setChecked(true);
+      f_list_ordered->setChecked(false);
+    } else if (lfmt.style() == QTextListFormat::ListDecimal) {
+      f_list_bullet->setChecked(false);
+      f_list_ordered->setChecked(true);
+    } else {
+      f_list_bullet->setChecked(false);
+      f_list_ordered->setChecked(false);
+    }
+  } else {
+    f_list_bullet->setChecked(false);
+    f_list_ordered->setChecked(false);
+  }
 }
 
 void NoteRichTextEdit::fontChanged(const QFont &f) {
@@ -532,6 +533,8 @@ void NoteRichTextEdit::slotCurrentCharFormatChanged(const QTextCharFormat &forma
     bgColorChanged((format.background().isOpaque()) ? format.background().color() : QColor());
     fgColorChanged((format.foreground().isOpaque()) ? format.foreground().color() : QColor());
     f_link->setChecked(format.isAnchor());
+
+    f_code->setChecked(format.fontFamily() == "mono");
 }
 
 void NoteRichTextEdit::slotClipboardDataChanged() {
@@ -600,13 +603,29 @@ void NoteRichTextEdit::insertCode(bool checked) {
   QTextCursor cursor = f_textedit->textCursor();
   cursor.beginEditBlock();
   if (!checked) {
-    QTextBlockFormat obfmt = cursor.blockFormat();
-    QTextBlockFormat bfmt;
-    bfmt.setIndent(obfmt.indent());
-    cursor.setBlockFormat(bfmt);
+    cursor.select(QTextCursor::BlockUnderCursor);
+    QString selectedText = cursor.selection().toPlainText();
+    cursor.removeSelectedText();
+    cursor.insertText(selectedText.replace(QRegExp("\\s+\\n"), "\n").remove(QRegExp("\\s+$")));
   } else {
-    f_textedit->document()->setHtml(f_textedit->document()->toHtml().split(cursor.block().text()).join("<code>"+cursor.block().text()+"</code>"));
+    if (cursor.selection().isEmpty())
+      cursor.select(QTextCursor::LineUnderCursor);
 
+    QStringList codePlainTextStringList = cursor.selection().toPlainText().split("\n");
+    int maxLineLength = 0;
+    for (QString const& currentLine: codePlainTextStringList) {
+      maxLineLength = qMax(maxLineLength, currentLine.size());
+    }
+    for (int k = 0; k < codePlainTextStringList.size(); ++k) {
+      QString currentLine = codePlainTextStringList.at(k);
+      while (currentLine.size() < maxLineLength)
+        currentLine.append(" ");
+      codePlainTextStringList.replace(k, currentLine);
+    }
+    QString codeInHtml = "<code style=\"font-family: mono; background-color: #000; color: #FFF;\">"+codePlainTextStringList.join("\n").replace("<", "&lt;").replace(" ", "&nbsp;").replace("\n", "<br/>")+"</div>";
+    cursor.removeSelectedText();
+    cursor.insertHtml(codeInHtml);
+    cursor.blockFormat().setProperty(1000, "Code");
   }
   cursor.endEditBlock();
 }
