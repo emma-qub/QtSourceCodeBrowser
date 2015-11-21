@@ -49,10 +49,8 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget *parent):
   m_lastBlockList = 0;
   f_textedit->setTabStopWidth(40);
 
-  connect(f_textedit, SIGNAL(currentCharFormatChanged(QTextCharFormat)),
-          this,     SLOT(slotCurrentCharFormatChanged(QTextCharFormat)));
-  connect(f_textedit, SIGNAL(cursorPositionChanged()),
-          this,     SLOT(slotCursorPositionChanged()));
+  connect(f_textedit, SIGNAL(currentCharFormatChanged(QTextCharFormat)), this, SLOT(slotCurrentCharFormatChanged(QTextCharFormat)));
+  connect(f_textedit, SIGNAL(cursorPositionChanged()), this, SLOT(slotCursorPositionChanged()));
 
   m_fontsize_h1 = 18;
   m_fontsize_h2 = 16;
@@ -63,19 +61,17 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget *parent):
   bgColorChanged(f_textedit->textColor());
 
   // paragraph formatting
-
-  m_paragraphItems    << tr("Standard")
-                      << tr("Heading 1")
-                      << tr("Heading 2")
-                      << tr("Heading 3")
-                      << tr("Heading 4")
-                      << tr("Monospace");
+  m_paragraphItems
+    << tr("Standard")
+    << tr("Heading 1")
+    << tr("Heading 2")
+    << tr("Heading 3")
+    << tr("Heading 4")
+    << tr("Monospace");
   f_paragraph->addItems(m_paragraphItems);
-
   connect(f_paragraph, SIGNAL(activated(int)), this, SLOT(textStyle(int)));
 
   // undo & redo
-
   f_undo->setShortcut(QKeySequence::Undo);
   f_redo->setShortcut(QKeySequence::Redo);
 
@@ -89,7 +85,6 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget *parent):
   connect(f_redo, SIGNAL(clicked()), f_textedit, SLOT(redo()));
 
   // cut, copy & paste
-
   f_cut->setShortcut(QKeySequence::Cut);
   f_copy->setShortcut(QKeySequence::Copy);
   f_paste->setShortcut(QKeySequence::Paste);
@@ -109,17 +104,14 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget *parent):
 #endif
 
   // link
-
   f_link->setShortcut(Qt::CTRL + Qt::Key_L);
 
   connect(f_link, SIGNAL(clicked(bool)), this, SLOT(textLink(bool)));
 
   // bold, italic & underline
-
   f_bold->setShortcut(Qt::CTRL + Qt::Key_B);
   f_italic->setShortcut(Qt::CTRL + Qt::Key_I);
   f_underline->setShortcut(Qt::CTRL + Qt::Key_U);
-
   f_strikeout->setIcon(QIcon("../QtSourceCodeBrowser/icons/strikeText.png"));
 
   connect(f_bold, SIGNAL(clicked()), this, SLOT(textBold()));
@@ -149,7 +141,6 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget *parent):
   f_menu->setPopupMode(QToolButton::InstantPopup);
 
   // lists
-
   f_list_bullet->setShortcut(Qt::CTRL + Qt::Key_Minus);
   f_list_bullet->setIcon(QIcon("../QtSourceCodeBrowser/icons/bulletList.png"));
   f_list_ordered->setShortcut(Qt::CTRL + Qt::Key_Equal);
@@ -159,9 +150,10 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget *parent):
   connect(f_list_ordered, SIGNAL(clicked(bool)), this, SLOT(listOrdered(bool)));
 
   // indentation
-
-  f_indent_dec->setShortcut(Qt::CTRL + Qt::Key_Comma);
-  f_indent_inc->setShortcut(Qt::CTRL + Qt::Key_Period);
+  f_textedit->setTabChangesFocus(false);
+  f_textedit->document()->setIndentWidth(20);
+  f_indent_dec->setShortcut(Qt::SHIFT + Qt::Key_Tab);
+  f_indent_inc->setShortcut(Qt::CTRL + Qt::Key_Tab);
 
   connect(f_indent_inc, SIGNAL(clicked()), this, SLOT(increaseIndentation()));
   connect(f_indent_dec, SIGNAL(clicked()), this, SLOT(decreaseIndentation()));
@@ -577,15 +569,15 @@ void NoteRichTextEdit::decreaseIndentation() {
 }
 
 void NoteRichTextEdit::indent(int delta) {
-    QTextCursor cursor = f_textedit->textCursor();
-    cursor.beginEditBlock();
-    QTextBlockFormat bfmt = cursor.blockFormat();
-    int ind = bfmt.indent();
-    if (ind + delta >= 0) {
-        bfmt.setIndent(ind + delta);
-        }
-    cursor.setBlockFormat(bfmt);
-    cursor.endEditBlock();
+  QTextCursor cursor = f_textedit->textCursor();
+  cursor.beginEditBlock();
+  QTextBlockFormat bfmt = cursor.blockFormat();
+  int ind = bfmt.indent();
+  if (ind + delta >= 0) {
+    bfmt.setIndent(ind + delta);
+  }
+  cursor.setBlockFormat(bfmt);
+  cursor.endEditBlock();
 }
 
 void NoteRichTextEdit::setText(const QString& text) {
