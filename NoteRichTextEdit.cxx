@@ -665,12 +665,12 @@ void NoteRichTextEdit::transformTextToInternalLink(QTextCursor const& p_cursor) 
   m_previousHtmlSelection = qtClassHtml;
 
   QRegExp colorCSS("([ ;]color:#)([A-Fa-f0-9]{6})");
-  QRegExp styleCSS("(style=\")");
+  QRegExp styleCSS("style=\"");
   colorCSS.setMinimal(true);
   int colorIndex = colorCSS.indexIn(qtClassHtml);
 
   if (colorIndex != -1) {
-    qtClassHtml.replace(colorIndex+colorCSS.cap(1).length(), 6, "46A2DA");
+    qtClassHtml.replace(colorIndex+colorCSS.cap(1).length(), colorCSS.cap(2).length(), "46A2DA");
   } else {
     qtClassHtml.insert(styleCSS.indexIn(qtClassHtml)+styleCSS.cap(0).length(), "color:#46A2DA; ");
   }
