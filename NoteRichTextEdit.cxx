@@ -112,6 +112,7 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
   f_bold->setShortcut(Qt::CTRL + Qt::Key_B);
   f_italic->setShortcut(Qt::CTRL + Qt::Key_I);
   f_underline->setShortcut(Qt::CTRL + Qt::Key_U);
+  f_strikeout->setFixedSize(22, 24);
   f_strikeout->setIcon(QIcon("../QtSourceCodeBrowser/icons/strikeText.png"));
 
   connect(f_bold, SIGNAL(clicked()), this, SLOT(textBold()));
@@ -160,8 +161,10 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
 
   // font size
   QFontDatabase db;
-  for (int size: db.standardSizes())
+  for (int size: db.standardSizes()) {
     f_fontsize->addItem(QString::number(size));
+  }
+  f_fontsize->setFixedWidth(50);
 
   connect(f_fontsize, SIGNAL(activated(QString)), this, SLOT(textSize(QString)));
   f_fontsize->setCurrentIndex(f_fontsize->findText(QString::number(QApplication::font().pointSize())));
@@ -180,9 +183,12 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
   connect(f_bgcolor, SIGNAL(clicked()), this, SLOT(textBgColor()));
 
   // images
+  f_image->setFixedSize(22, 24);
+  f_image->setIcon(QIcon("../QtSourceCodeBrowser/icons/image.png"));
   connect(f_image, SIGNAL(clicked()), this, SLOT(insertImage()));
 
   // code
+  f_code->setFixedSize(22, 24);
   f_code->setIcon(QIcon("../QtSourceCodeBrowser/icons/code.png"));
   f_code->setShortcut(Qt::CTRL + Qt::Key_K);
   connect(f_code, SIGNAL(clicked(bool)), this, SLOT(insertCode(bool)));
