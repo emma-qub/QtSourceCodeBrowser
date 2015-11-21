@@ -69,11 +69,11 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
 
   // Root directory name
   QString sourceDirectory = settings.value("SourceDirectory").toString();
-  while (sourceDirectory.isEmpty())
-  {
+  while (sourceDirectory.isEmpty()) {
     sourceDirectory = QInputDialog::getText(this, "Source Directory", "Provide the source directory");
-    if (sourceDirectory.endsWith("/"))
+    if (sourceDirectory.endsWith("/")) {
       sourceDirectory.remove(sourceDirectory.size()-1, 1);
+    }
     settings.setValue("SourceDirectory", sourceDirectory);
   }
   m_rootDirectoryName = settings.value("SourceDirectory").toString();
@@ -155,61 +155,54 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   m_notesTextEdit->show();
 }
 
-void BrowseSourceWidget::expandAll()
-{
+void BrowseSourceWidget::expandAll() {
   m_sourcesTreeView->expandAll();
 }
 
-void BrowseSourceWidget::keyReleaseEvent(QKeyEvent* p_event)
-{
+void BrowseSourceWidget::keyReleaseEvent(QKeyEvent* p_event) {
   QString currentSourceOpen = m_openDocumentsView->currentIndex().data(Qt::ToolTipRole).toString();
   if (currentSourceOpen.isEmpty())
     return;
 
-  switch (p_event->key())
-  {
-  case Qt::Key_F4:
-  {
-    QString currentExtension = currentSourceOpen.split('.').last();
-    QString newExtension = (currentExtension == "h") ? "cpp" : "h";
-    QStringList filePathSplit = currentSourceOpen.split(QDir::separator());
-    QString fileName = filePathSplit.last();
-    QStringList fileNameSplit = fileName.split(".");
-    fileNameSplit.replace(fileNameSplit.size()-1, newExtension);
-    if (fileNameSplit.at(fileNameSplit.size()-2).endsWith("_p"))
-      fileNameSplit.replace(fileNameSplit.size()-2, fileNameSplit.at(fileNameSplit.size()-2).mid(0, fileNameSplit.at(fileNameSplit.size()-2).size()-2));
-    fileName = fileNameSplit.join(".");
-    filePathSplit.replace(filePathSplit.size()-1, fileName);
-    currentSourceOpen = filePathSplit.join(QDir::separator());
-    openDocumentInEditor(fileName, currentSourceOpen);
-    break;
-  }
-  case Qt::Key_F5:
-  {
-    QStringList fileAndExtension = currentSourceOpen.split('.');
-    if (fileAndExtension.last() == "cpp")
-    {
-      fileAndExtension.replace(fileAndExtension.size()-1, "h");
-      currentSourceOpen = fileAndExtension.join(".");
+  switch (p_event->key()) {
+    case Qt::Key_F4: {
+      QString currentExtension = currentSourceOpen.split('.').last();
+      QString newExtension = (currentExtension == "h") ? "cpp" : "h";
+      QStringList filePathSplit = currentSourceOpen.split(QDir::separator());
+      QString fileName = filePathSplit.last();
+      QStringList fileNameSplit = fileName.split(".");
+      fileNameSplit.replace(fileNameSplit.size()-1, newExtension);
+      if (fileNameSplit.at(fileNameSplit.size()-2).endsWith("_p"))
+        fileNameSplit.replace(fileNameSplit.size()-2, fileNameSplit.at(fileNameSplit.size()-2).mid(0, fileNameSplit.at(fileNameSplit.size()-2).size()-2));
+      fileName = fileNameSplit.join(".");
+      filePathSplit.replace(filePathSplit.size()-1, fileName);
+      currentSourceOpen = filePathSplit.join(QDir::separator());
+      openDocumentInEditor(fileName, currentSourceOpen);
+      break;
+    } case Qt::Key_F5: {
+      QStringList fileAndExtension = currentSourceOpen.split('.');
+      if (fileAndExtension.last() == "cpp")
+      {
+        fileAndExtension.replace(fileAndExtension.size()-1, "h");
+        currentSourceOpen = fileAndExtension.join(".");
+      }
+      QStringList filePathSplit = currentSourceOpen.split(QDir::separator());
+      QString fileName = filePathSplit.last();
+      QStringList fileNameSplit = fileName.split(".");
+      if (fileNameSplit.at(fileNameSplit.size()-2).endsWith("_p"))
+        fileNameSplit.replace(fileNameSplit.size()-2, fileNameSplit.at(fileNameSplit.size()-2).mid(0, fileNameSplit.at(fileNameSplit.size()-2).size()-2));
+      else
+        fileNameSplit.replace(fileNameSplit.size()-2, fileNameSplit.at(fileNameSplit.size()-2)+"_p");
+      fileName = fileNameSplit.join(".");
+      filePathSplit.replace(filePathSplit.size()-1, fileName);
+      currentSourceOpen = filePathSplit.join(QDir::separator());
+      openDocumentInEditor(fileName, currentSourceOpen);
+      break;
     }
-    QStringList filePathSplit = currentSourceOpen.split(QDir::separator());
-    QString fileName = filePathSplit.last();
-    QStringList fileNameSplit = fileName.split(".");
-    if (fileNameSplit.at(fileNameSplit.size()-2).endsWith("_p"))
-      fileNameSplit.replace(fileNameSplit.size()-2, fileNameSplit.at(fileNameSplit.size()-2).mid(0, fileNameSplit.at(fileNameSplit.size()-2).size()-2));
-    else
-      fileNameSplit.replace(fileNameSplit.size()-2, fileNameSplit.at(fileNameSplit.size()-2)+"_p");
-    fileName = fileNameSplit.join(".");
-    filePathSplit.replace(filePathSplit.size()-1, fileName);
-    currentSourceOpen = filePathSplit.join(QDir::separator());
-    openDocumentInEditor(fileName, currentSourceOpen);
-    break;
-  }
   }
 }
 
-void BrowseSourceWidget::searchFiles(QString const& p_fileName)
-{
+void BrowseSourceWidget::searchFiles(QString const& p_fileName) {
   if (p_fileName.isEmpty() && m_sourcesStackedWidget->currentWidget() != m_sourcesTreeView)
     m_sourcesStackedWidget->setCurrentWidget(m_sourcesTreeView);
   else if (!p_fileName.isEmpty() && m_sourcesStackedWidget->currentWidget() != m_sourceSearchView)
@@ -219,19 +212,15 @@ void BrowseSourceWidget::searchFiles(QString const& p_fileName)
   m_proxyModel->setFilterRegExp(p_fileName);
 }
 
-void BrowseSourceWidget::openSourceCode(QModelIndex const& p_index)
-{
+void BrowseSourceWidget::openSourceCode(QModelIndex const& p_index) {
   QString fileName(p_index.data().toString());
-  if (fileName.endsWith(".cpp") || fileName.endsWith(".h"))
-  {
+  if (fileName.endsWith(".cpp") || fileName.endsWith(".h")) {
     QString absoluteFilePath(fileName);
     QModelIndex currentIndex = p_index;
     QModelIndex parentIndex;
-    while ((parentIndex = currentIndex.parent()) != QModelIndex())
-    {
+    while ((parentIndex = currentIndex.parent()) != QModelIndex()) {
       QString parentDirectoryName = parentIndex.data().toString();
-      if (parentDirectoryName == QString(QDir::separator()))
-      {
+      if (parentDirectoryName == QString(QDir::separator())) {
         absoluteFilePath = QDir::separator() + absoluteFilePath;
         break;
       }
@@ -244,71 +233,62 @@ void BrowseSourceWidget::openSourceCode(QModelIndex const& p_index)
   }
 }
 
-void BrowseSourceWidget::sortOpenDocuments(QModelIndex, int, int)
-{
+void BrowseSourceWidget::sortOpenDocuments(QModelIndex, int, int) {
   m_openDocumentsProxyModel->sort(0);
 }
 
-void BrowseSourceWidget::showHorizontal()
-{
+void BrowseSourceWidget::showHorizontal() {
   m_sourcesNotesSplitter->setOrientation(Qt::Horizontal);
   m_notesTextEdit->show();
 }
 
-void BrowseSourceWidget::showVertical()
-{
+void BrowseSourceWidget::showVertical() {
   m_sourcesNotesSplitter->setOrientation(Qt::Vertical);
   m_notesTextEdit->show();
 }
 
-void BrowseSourceWidget::openSourceCodeFromFileName(const QString& p_fileName)
-{
+void BrowseSourceWidget::openSourceCodeFromFileName(const QString& p_fileName) {
   m_searchLineEdit->setText("^"+p_fileName.toLower());
   QMenu contextMenu(tr("Context menu"), this);
 
-  for (int k = 0; k < m_sourceSearchView->model()->rowCount(); ++k)
-  {
+  for (int k = 0; k < m_sourceSearchView->model()->rowCount(); ++k) {
     QString sourceFileName = m_sourceSearchView->model()->index(k, 0).data().toString();
     QAction* action = new QAction(sourceFileName, this);
     connect(action, SIGNAL(triggered()), this, SLOT(openSourceCodeFromMenu()));
     contextMenu.addAction(action);
-    if (sourceFileName.endsWith(".cpp"))
+    if (sourceFileName.endsWith(".cpp")) {
       action->setIcon(QIcon("../QtSourceCodeBrowser/icons/cppFile.png"));
-    else if (sourceFileName.endsWith(".h"))
+    } else if (sourceFileName.endsWith(".h")) {
       action->setIcon(QIcon("../QtSourceCodeBrowser/icons/hFile.png"));
+    }
     m_actionSourcesMap.insert(action, m_sourceSearchView->model()->index(k, 0));
   }
   contextMenu.exec(cursor().pos());
   connect(&contextMenu, SIGNAL(destroyed(QObject*)), this, SLOT(destroyContextualMenu(QObject*)));
 }
 
-void BrowseSourceWidget::destroyContextualMenu(QObject* p_object)
-{
+void BrowseSourceWidget::destroyContextualMenu(QObject* p_object) {
   Q_UNUSED(p_object)
   qDeleteAll(m_actionSourcesMap.keys());
   m_actionSourcesMap.clear();
   m_searchLineEdit->clear();
 }
 
-void BrowseSourceWidget::openSourceCodeFromMenu()
-{
+void BrowseSourceWidget::openSourceCodeFromMenu() {
   QAction* actionSender = dynamic_cast<QAction*>(sender());
   Q_ASSERT(actionSender);
   openSourceCodeFromOpenDocuments(m_actionSourcesMap.value(actionSender));
 }
 
-void BrowseSourceWidget::openSourceCodeFromOpenDocuments(QModelIndex const& p_index)
-{
+void BrowseSourceWidget::openSourceCodeFromOpenDocuments(QModelIndex const& p_index) {
   QString fileName = p_index.data(Qt::DisplayRole).toString();
   QString absoluteFilePath = p_index.data(Qt::ToolTipRole).toString();
   openDocumentInEditor(fileName, absoluteFilePath);
 }
 
-void BrowseSourceWidget::openDocumentInEditor(QString const& fileName, QString const& absoluteFilePath)
-{
+void BrowseSourceWidget::openDocumentInEditor(QString const& fileName, QString const& absoluteFilePath) {
   QFile sourceFile(absoluteFilePath);
-  if (!sourceFile.exists())
-  {
+  if (!sourceFile.exists()) {
     qDebug() << "404 Not Found" << "The file\n"+absoluteFilePath+"\ndoes not exist on this computer.";
     return;
   }
@@ -321,11 +301,11 @@ void BrowseSourceWidget::openDocumentInEditor(QString const& fileName, QString c
   openNotesFromSource(fileName);
 }
 
-QString BrowseSourceWidget::getSourceContent(QString const& absoluteFilePath)
-{
+QString BrowseSourceWidget::getSourceContent(QString const& absoluteFilePath) {
   QFile sourceFile(absoluteFilePath);
-  if (!sourceFile.open(QIODevice::ReadOnly | QIODevice::Text))
+  if (!sourceFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
     QMessageBox::warning(this, "Opening issue", sourceFile.errorString());
+  }
 
   QTextStream in(&sourceFile);
 
