@@ -14,13 +14,7 @@ public:
 protected:
   QVariant data(const QModelIndex& index, int role) const override;
 
-protected slots:
-  void cleanDirectory(const QString& p_directoryName);
-  void computeDirectoriesToBeRemoved(const QString& p_rootDirectoryName);
-
 private:
-  bool computeDirectoriesToRemove(QString const& p_directoryName, QStringList& emptyDirectories);
-
   QStringList m_emptyDirectories;
 };
 
