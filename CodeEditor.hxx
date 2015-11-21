@@ -59,6 +59,7 @@ public:
 
   void lineNumberAreaPaintEvent(QPaintEvent* p_event);
   int lineNumberAreaWidth();
+  void openSourceCode(QString const& p_className, QString const& p_content);
 
 protected:
   void resizeEvent(QResizeEvent* p_event) override;
@@ -68,8 +69,14 @@ private slots:
   void highlightCurrentLine();
   void updateLineNumberArea(QRect const& p_rect, int p_dy);
 
+signals:
+  void methodListReady(QMap<int, QString>);
+
 private:
-  QWidget* lineNumberArea;
+  void setPlainText(const QString& p_text);
+
+  QWidget* m_lineNumberArea;
+  QMap<int, QString> m_methodsPerLineMap;
 };
 
 

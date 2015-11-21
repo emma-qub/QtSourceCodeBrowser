@@ -43,10 +43,12 @@
 #include <QPainter>
 #include <QTextBlock>
 
-CodeEditor::CodeEditor(QWidget* p_parent):
-  QPlainTextEdit(p_parent) {
+#include <QDebug>
 
-  lineNumberArea = new LineNumberArea(this);
+CodeEditor::CodeEditor(QWidget* p_parent):
+  QPlainTextEdit(p_parent),
+  m_lineNumberArea(new LineNumberArea(this)),
+  m_methodsPerLineMap() {
 
   connect(this, SIGNAL(blockCountChanged(int)), this, SLOT(updateLineNumberAreaWidth(int)));
   connect(this, SIGNAL(updateRequest(QRect,int)), this, SLOT(updateLineNumberArea(QRect,int)));
@@ -76,9 +78,9 @@ void CodeEditor::updateLineNumberAreaWidth(int p_newBlockCount) {
 
 void CodeEditor::updateLineNumberArea(QRect const& p_rect, int p_dy) {
   if (p_dy) {
-    lineNumberArea->scroll(0, p_dy);
+    m_lineNumberArea->scroll(0, p_dy);
   } else {
-    lineNumberArea->update(0, p_rect.y(), lineNumberArea->width(), p_rect.height());
+    m_lineNumberArea->update(0, p_rect.y(), m_lineNumberArea->width(), p_rect.height());
   }
 
   if (p_rect.contains(viewport()->rect())) {
@@ -86,11 +88,33 @@ void CodeEditor::updateLineNumberArea(QRect const& p_rect, int p_dy) {
   }
 }
 
+void CodeEditor::setPlainText(const QString& p_text)
+{
+   QPlainTextEdit::setPlainText(p_text);
+}
+
+void CodeEditor::openSourceCode(const QString& p_className, const QString& p_content) {
+  setPlainText(p_content);
+  m_methodsPerLineMap.clear();
+
+  QString content = toPlainText();
+  QRegExp methodName("(([A-Za-z_&:]+\\s+\\**\\s*)?)?"+p_className+"[A-Za-z_]*::[A-Za-z_~]+\\([A-Za-z\\s_*&:,]*\\)(\\s+const)?");
+  methodName.setCaseSensitivity(Qt::CaseInsensitive);
+
+  int i = -1;
+  while ((i = methodName.indexIn(content, i+1)) >= 0) {
+    m_methodsPerLineMap.insert(i, methodName.cap(0).split("\n").last());
+    i += methodName.cap(0).length();
+  }
+
+  emit methodListReady(m_methodsPerLineMap);
+}
+
 void CodeEditor::resizeEvent(QResizeEvent* p_event) {
   QPlainTextEdit::resizeEvent(p_event);
 
   QRect cr = contentsRect();
-  lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
+  m_lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
 }
 
 void CodeEditor::highlightCurrentLine() {
@@ -112,7 +136,7 @@ void CodeEditor::highlightCurrentLine() {
 }
 
 void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent* p_event) {
-  QPainter painter(lineNumberArea);
+  QPainter painter(m_lineNumberArea);
   painter.fillRect(p_event->rect(), QColor("#EFEBE7"));
 
   QTextBlock block = firstVisibleBlock();
@@ -124,7 +148,7 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent* p_event) {
     if (block.isVisible() && bottom >= p_event->rect().top()) {
       QString number = QString::number(blockNumber + 1);
       painter.setPen(Qt::black);
-      painter.drawText(0, top, lineNumberArea->width(), fontMetrics().height(), Qt::AlignRight, number);
+      painter.drawText(0, top, m_lineNumberArea->width(), fontMetrics().height(), Qt::AlignRight, number);
     }
 
     block = block.next();

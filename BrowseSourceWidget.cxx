@@ -19,6 +19,10 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   m_notesFileInfo(),
   m_notesFilePath() {
 
+  // Methods ComboBox
+  m_methodsComboBox = new QComboBox;
+  connect(m_methodsComboBox, SIGNAL(activated(int)), this, SLOT(goToLine(int)));
+
   // Source editor
   m_sourcesEditor = new CodeEditor(this);
 
@@ -31,6 +35,14 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   m_sourcesEditor->setReadOnly(true);
   m_sourcesEditor->setTextInteractionFlags(m_sourcesEditor->textInteractionFlags() | Qt::TextSelectableByKeyboard);
   m_highlighters.append(new Highlighter(m_sourcesEditor->document()));
+  connect(m_sourcesEditor, SIGNAL(methodListReady(QMap<int,QString>)), this, SLOT(fillMethodsComboBox(QMap<int,QString>)));
+
+  // Methods and Sources Splitter
+  m_sourcesMethodsSplitter = new QSplitter(Qt::Vertical);
+  m_sourcesMethodsSplitter->addWidget(m_methodsComboBox);
+  m_sourcesMethodsSplitter->addWidget(m_sourcesEditor);
+  m_sourcesMethodsSplitter->setStretchFactor(0, 0);
+  m_sourcesMethodsSplitter->setStretchFactor(1, 1);
 
   // Note Text Edit
   m_notesTextEdit = new NoteRichTextEdit(this);
@@ -56,7 +68,7 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
 
   // Sources and Notes Splitter
   m_sourcesNotesSplitter = new QSplitter;
-  m_sourcesNotesSplitter->addWidget(m_sourcesEditor);
+  m_sourcesNotesSplitter->addWidget(m_sourcesMethodsSplitter);
   m_sourcesNotesSplitter->addWidget(m_notesTextEdit);
   m_sourcesNotesSplitter->setStretchFactor(0, 1);
   m_sourcesNotesSplitter->setStretchFactor(1, 0);
@@ -264,6 +276,31 @@ void BrowseSourceWidget::openSourceCodeFromFileName(const QString& p_fileName) {
   connect(&contextMenu, SIGNAL(destroyed(QObject*)), this, SLOT(destroyContextualMenu(QObject*)));
 }
 
+void BrowseSourceWidget::fillMethodsComboBox(QMap<int, QString> const& p_methodsAndIndex)
+{
+  m_methodsComboBox->clear();
+  for (int index: p_methodsAndIndex.keys())
+  {
+    m_methodsComboBox->addItem(p_methodsAndIndex.value(index), QVariant::fromValue(index));
+  }
+}
+
+void BrowseSourceWidget::goToLine(int p_index)
+{
+  QTextCursor cursor = m_sourcesEditor->textCursor();
+  m_sourcesEditor->moveCursor(QTextCursor::End);
+
+  int middleLine = m_sourcesEditor->viewport()->height() / (2 * m_sourcesEditor->fontMetrics().height());
+
+  cursor.setPosition(m_methodsComboBox->itemData(p_index).toInt());
+  m_sourcesEditor->setTextCursor(cursor);
+
+  for (int k = 0; k < middleLine; ++k)
+    m_sourcesEditor->moveCursor(QTextCursor::Up);
+  for (int k = 0; k < middleLine; ++k)
+    m_sourcesEditor->moveCursor(QTextCursor::Down);
+}
+
 void BrowseSourceWidget::destroyContextualMenu(QObject* p_object) {
   Q_UNUSED(p_object)
   qDeleteAll(m_actionSourcesMap.keys());
@@ -290,7 +327,7 @@ void BrowseSourceWidget::openDocumentInEditor(QString const& p_fileName, QString
     return;
   }
   m_openDocumentsModel->insertDocument(p_fileName, p_absoluteFilePath);
-  m_sourcesEditor->setPlainText(getSourceContent(p_absoluteFilePath));
+  m_sourcesEditor->openSourceCode(p_fileName.split(".").first(), getSourceContent(p_absoluteFilePath));
   QModelIndex openIndex = m_openDocumentsProxyModel->mapFromSource(m_openDocumentsModel->indexFromFile(p_fileName, p_absoluteFilePath));
   m_openDocumentsView->setCurrentIndex(openIndex);
 

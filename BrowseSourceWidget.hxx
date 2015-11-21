@@ -39,6 +39,8 @@ protected slots:
   void showHorizontal();
   void showVertical();
   void openSourceCodeFromFileName(QString const& p_fileName);
+  void fillMethodsComboBox(QMap<int, QString> const& p_methodsAndIndex);
+  void goToLine(int p_index);
 
 private:
   QString getSourceContent(QString const& p_absoluteFilePath);
@@ -47,7 +49,9 @@ private:
   void fillSourceModelFromDirectory(QString const& p_directoryName);
   void openNotesFromSource(QString const& p_fileName);
 
+  QComboBox* m_methodsComboBox;
   CodeEditor* m_sourcesEditor;
+  QSplitter* m_sourcesMethodsSplitter;
   NoteRichTextEdit* m_notesTextEdit;
   QSplitter* m_sourcesNotesSplitter;
 
