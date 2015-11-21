@@ -12,6 +12,7 @@ public:
 
 protected:
   bool filterAcceptsRow(int p_sourceRow, QModelIndex const& p_sourceParent) const override;
+  QVariant data(const QModelIndex& index, int role) const override;
 
 private:
   void filterAux(bool& p_match, int p_sourceRow, QModelIndex const& p_sourceParent) const;

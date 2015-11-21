@@ -1,5 +1,7 @@
 #include "SourceFileSystemProxyModel.hxx"
 
+#include <QFileInfo>
+#include <QPixmap>
 #include <QDebug>
 
 SourceFileSystemProxyModel::SourceFileSystemProxyModel(QModelIndex const& p_rootIndex, QObject *parent) :
@@ -49,4 +51,20 @@ bool SourceFileSystemProxyModel::matchRegExp(int p_sourceRow, QModelIndex const&
 {
   QModelIndex index = sourceModel()->index(p_sourceRow, 0, p_sourceParent);
   return (sourceModel()->data(index).toString().contains(filterRegExp()));
+}
+
+QVariant SourceFileSystemProxyModel::data( const QModelIndex& index, int role ) const {
+  if (role == Qt::DecorationRole)
+  {
+    QFileInfo info(index.data(Qt::ToolTipRole).toString());
+
+    if(info.isFile())
+    {
+      if(info.suffix() == "cpp")
+        return QPixmap("../QtSourceCodeBrowser/icons/cppFile.png");
+      else if(info.suffix() == "h")
+        return QPixmap("../QtSourceCodeBrowser/icons/hFile.png");
+    }
+  }
+  return QSortFilterProxyModel::data(index, role);
 }
