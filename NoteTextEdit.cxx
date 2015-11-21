@@ -1,13 +1,21 @@
 #include "NoteTextEdit.hxx"
 #include <QTextDocument>
+#include <QTextDocumentFragment>
 #include <QTextCursor>
 #include <QImage>
 #include <QByteArray>
 #include <QBuffer>
+#include <QMouseEvent>
+#include <QDebug>
+
 #include <stdlib.h>
 
 
-NoteTextEdit::NoteTextEdit(QWidget *parent) : QTextEdit(parent) {
+NoteTextEdit::NoteTextEdit(QWidget *parent):
+  QTextEdit(parent),
+  m_currentCursor() {
+
+  setMouseTracking(true);
 }
 
 
@@ -74,3 +82,44 @@ void NoteTextEdit::dropImage(const QImage& image, const QString& format) {
     cursor.insertImage    ( imageFormat );
 }
 
+void NoteTextEdit::mouseMoveEvent(QMouseEvent* event)
+{
+  if (event->modifiers() == Qt::CTRL)
+  {
+    QTextCursor cursor = cursorForPosition(event->pos());
+    cursor.select(QTextCursor::WordUnderCursor);
+    if (QRegExp("^Q.+").exactMatch(cursor.selectedText())) {
+      m_currentCursor = cursor;
+      emit transformToLinkRequested(m_currentCursor);
+    } else {
+      emit transformLinkBackRequested();
+      m_currentCursor = QTextCursor();
+    }
+  }
+  else if (m_currentCursor != QTextCursor())
+  {
+    emit transformLinkBackRequested();
+    m_currentCursor = QTextCursor();
+  }
+  QTextEdit::mouseMoveEvent(event);
+}
+
+void NoteTextEdit::mousePressEvent(QMouseEvent* event)
+{
+  if (event->modifiers() == Qt::CTRL)
+  {
+    emit transformLinkBackRequested();
+    m_currentCursor = QTextCursor();
+    emit openSourceRequested(cursorForPosition(event->pos()));
+  }
+  QTextEdit::mousePressEvent(event);
+}
+
+void NoteTextEdit::keyReleaseEvent(QKeyEvent* event)
+{
+  if (event->key() == Qt::Key_Control)
+  {
+    emit transformLinkBackRequested();
+    m_currentCursor = QTextCursor();
+  }
+}

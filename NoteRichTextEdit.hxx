@@ -42,6 +42,9 @@ public:
   QTextCursor    textCursor() const { return f_textedit->textCursor(); }
   void           setTextCursor(const QTextCursor& cursor) { f_textedit->setTextCursor(cursor); }
 
+signals:
+  void openSourceRequested(QString);
+
 public slots:
   void setText(const QString &text);
 
@@ -69,6 +72,9 @@ protected slots:
   void insertImage();
   void textSource();
   void insertCode(bool checked);
+  void transformTextToInternalLink(QTextCursor const& cursor);
+  void transformInternalLinkBack();
+  void openSourceFromPosition(const QTextCursor& cursor);
 
 protected:
   void mergeFormatOnWordOrSelection(const QTextCharFormat &format);
@@ -77,7 +83,8 @@ protected:
   void bgColorChanged(const QColor &c);
   void list(bool checked, QTextListFormat::Style style);
   void indent(int delta);
-  void focusInEvent(QFocusEvent *event);
+  void focusInEvent(QFocusEvent *event) override;
+  void mouseMoveEvent(QMouseEvent* event) override;
 
   QStringList m_paragraphItems;
   int m_fontsize_h1;
@@ -93,6 +100,10 @@ protected:
                         ParagraphMonospace };
 
   QPointer<QTextList> m_lastBlockList;
+
+private:
+  QTextCursor m_previousCursor;
+  QString m_previousHtmlSelection;
 };
 
 #endif

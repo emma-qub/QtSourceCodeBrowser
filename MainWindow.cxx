@@ -4,6 +4,7 @@
 
 #include <QAction>
 #include <QMenuBar>
+#include <QDebug>
 
 MainWindow::MainWindow(QWidget* p_parent):
   QMainWindow(p_parent) {

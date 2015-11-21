@@ -7,6 +7,7 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QAction>
+#include <QMenu>
 #include <QDebug>
 
 #include "CodeEditor.hxx"
@@ -33,6 +34,7 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
 
   // Note Text Edit
   m_notesTextEdit = new NoteRichTextEdit(this);
+  connect(m_notesTextEdit, SIGNAL(openSourceRequested(QString)), this, SLOT(openSourceCodeFromFileName(QString)));
 
   // Edit Notes ON
   QAction* editNotesOnAction = new QAction(this);
@@ -139,6 +141,12 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   mainLayout->addWidget(hsplitter);
 
   setLayout(mainLayout);
+
+  setContextMenuPolicy(Qt::CustomContextMenu);
+
+  /////////////////////////////
+  openNotesFromSource("qdialog.cpp");
+  m_notesTextEdit->show();
 }
 
 void BrowseSourceWidget::expandAll()
@@ -233,6 +241,54 @@ void BrowseSourceWidget::openSourceCode(QModelIndex const& p_index)
 void BrowseSourceWidget::sortOpenDocuments(QModelIndex, int, int)
 {
   m_openDocumentsProxyModel->sort(0);
+}
+
+void BrowseSourceWidget::showHorizontal()
+{
+  m_sourcesNotesSplitter->setOrientation(Qt::Horizontal);
+  m_notesTextEdit->show();
+}
+
+void BrowseSourceWidget::showVertical()
+{
+  m_sourcesNotesSplitter->setOrientation(Qt::Vertical);
+  m_notesTextEdit->show();
+}
+
+void BrowseSourceWidget::openSourceCodeFromFileName(const QString& p_fileName)
+{
+  m_searchLineEdit->setText("^"+p_fileName.toLower());
+  QMenu contextMenu(tr("Context menu"), this);
+
+  for (int k = 0; k < m_sourceSearchView->model()->rowCount(); ++k)
+  {
+    QString sourceFileName = m_sourceSearchView->model()->index(k, 0).data().toString();
+    QAction* action = new QAction(sourceFileName, this);
+    connect(action, SIGNAL(triggered()), this, SLOT(openSourceCodeFromMenu()));
+    contextMenu.addAction(action);
+    if (sourceFileName.endsWith(".cpp"))
+      action->setIcon(QIcon("../QtSourceCodeBrowser/icons/cppFile.png"));
+    else if (sourceFileName.endsWith(".h"))
+      action->setIcon(QIcon("../QtSourceCodeBrowser/icons/hFile.png"));
+    m_actionSourcesMap.insert(action, m_sourceSearchView->model()->index(k, 0));
+  }
+  contextMenu.exec(cursor().pos());
+  connect(&contextMenu, SIGNAL(destroyed(QObject*)), this, SLOT(destroyContextualMenu(QObject*)));
+}
+
+void BrowseSourceWidget::destroyContextualMenu(QObject* p_object)
+{
+  Q_UNUSED(p_object)
+  qDeleteAll(m_actionSourcesMap.keys());
+  m_actionSourcesMap.clear();
+  m_searchLineEdit->clear();
+}
+
+void BrowseSourceWidget::openSourceCodeFromMenu()
+{
+  QAction* actionSender = dynamic_cast<QAction*>(sender());
+  Q_ASSERT(actionSender);
+  openSourceCodeFromOpenDocuments(m_actionSourcesMap.value(actionSender));
 }
 
 void BrowseSourceWidget::openSourceCodeFromOpenDocuments(QModelIndex const& p_index)

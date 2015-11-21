@@ -35,8 +35,13 @@ protected:
 protected slots:
   void searchFiles(QString const& p_fileName);
   void openSourceCode(QModelIndex const& p_index);
+  void destroyContextualMenu(QObject* p_object);
+  void openSourceCodeFromMenu();
   void openSourceCodeFromOpenDocuments(QModelIndex const& p_index);
   void sortOpenDocuments(QModelIndex, int, int);
+  void showHorizontal();
+  void showVertical();
+  void openSourceCodeFromFileName(QString const& p_fileName);
 
 private:
   QString getSourceContent(QString const& absoluteFilePath);
@@ -73,6 +78,8 @@ private:
   bool m_notesExist;
   QFileInfo m_notesFileInfo;
   QString m_notesFilePath;
+
+  QMap<QAction*, QModelIndex> m_actionSourcesMap;
 };
 
 #endif // BROWSESOURCEWIDGET_HXX

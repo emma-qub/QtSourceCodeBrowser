@@ -40,162 +40,170 @@
 #include <QDialog>
 #include <QTextDocumentFragment>
 
-NoteRichTextEdit::NoteRichTextEdit(QWidget *parent) : QWidget(parent) {
-    setupUi(this);
-    m_lastBlockList = 0;
-    f_textedit->setTabStopWidth(40);
+NoteRichTextEdit::NoteRichTextEdit(QWidget *parent):
+  QWidget(parent),
+  m_previousCursor(),
+  m_previousHtmlSelection() {
 
-    connect(f_textedit, SIGNAL(currentCharFormatChanged(QTextCharFormat)),
-            this,     SLOT(slotCurrentCharFormatChanged(QTextCharFormat)));
-    connect(f_textedit, SIGNAL(cursorPositionChanged()),
-            this,     SLOT(slotCursorPositionChanged()));
+  setupUi(this);
+  m_lastBlockList = 0;
+  f_textedit->setTabStopWidth(40);
 
-    m_fontsize_h1 = 18;
-    m_fontsize_h2 = 16;
-    m_fontsize_h3 = 14;
-    m_fontsize_h4 = 12;
+  connect(f_textedit, SIGNAL(currentCharFormatChanged(QTextCharFormat)),
+          this,     SLOT(slotCurrentCharFormatChanged(QTextCharFormat)));
+  connect(f_textedit, SIGNAL(cursorPositionChanged()),
+          this,     SLOT(slotCursorPositionChanged()));
 
-    fontChanged(f_textedit->font());
-    bgColorChanged(f_textedit->textColor());
+  m_fontsize_h1 = 18;
+  m_fontsize_h2 = 16;
+  m_fontsize_h3 = 14;
+  m_fontsize_h4 = 12;
 
-    // paragraph formatting
+  fontChanged(f_textedit->font());
+  bgColorChanged(f_textedit->textColor());
 
-    m_paragraphItems    << tr("Standard")
-                        << tr("Heading 1")
-                        << tr("Heading 2")
-                        << tr("Heading 3")
-                        << tr("Heading 4")
-                        << tr("Monospace");
-    f_paragraph->addItems(m_paragraphItems);
+  // paragraph formatting
 
-    connect(f_paragraph, SIGNAL(activated(int)),
-            this, SLOT(textStyle(int)));
+  m_paragraphItems    << tr("Standard")
+                      << tr("Heading 1")
+                      << tr("Heading 2")
+                      << tr("Heading 3")
+                      << tr("Heading 4")
+                      << tr("Monospace");
+  f_paragraph->addItems(m_paragraphItems);
 
-    // undo & redo
+  connect(f_paragraph, SIGNAL(activated(int)), this, SLOT(textStyle(int)));
 
-    f_undo->setShortcut(QKeySequence::Undo);
-    f_redo->setShortcut(QKeySequence::Redo);
+  // undo & redo
 
-    connect(f_textedit->document(), SIGNAL(undoAvailable(bool)),
-            f_undo, SLOT(setEnabled(bool)));
-    connect(f_textedit->document(), SIGNAL(redoAvailable(bool)),
-            f_redo, SLOT(setEnabled(bool)));
+  f_undo->setShortcut(QKeySequence::Undo);
+  f_redo->setShortcut(QKeySequence::Redo);
 
-    f_undo->setEnabled(f_textedit->document()->isUndoAvailable());
-    f_redo->setEnabled(f_textedit->document()->isRedoAvailable());
+  connect(f_textedit->document(), SIGNAL(undoAvailable(bool)), f_undo, SLOT(setEnabled(bool)));
+  connect(f_textedit->document(), SIGNAL(redoAvailable(bool)), f_redo, SLOT(setEnabled(bool)));
 
-    connect(f_undo, SIGNAL(clicked()), f_textedit, SLOT(undo()));
-    connect(f_redo, SIGNAL(clicked()), f_textedit, SLOT(redo()));
+  f_undo->setEnabled(f_textedit->document()->isUndoAvailable());
+  f_redo->setEnabled(f_textedit->document()->isRedoAvailable());
 
-    // cut, copy & paste
+  connect(f_undo, SIGNAL(clicked()), f_textedit, SLOT(undo()));
+  connect(f_redo, SIGNAL(clicked()), f_textedit, SLOT(redo()));
 
-    f_cut->setShortcut(QKeySequence::Cut);
-    f_copy->setShortcut(QKeySequence::Copy);
-    f_paste->setShortcut(QKeySequence::Paste);
+  // cut, copy & paste
 
-    f_cut->setEnabled(false);
-    f_copy->setEnabled(false);
+  f_cut->setShortcut(QKeySequence::Cut);
+  f_copy->setShortcut(QKeySequence::Copy);
+  f_paste->setShortcut(QKeySequence::Paste);
 
-    connect(f_cut, SIGNAL(clicked()), f_textedit, SLOT(cut()));
-    connect(f_copy, SIGNAL(clicked()), f_textedit, SLOT(copy()));
-    connect(f_paste, SIGNAL(clicked()), f_textedit, SLOT(paste()));
+  f_cut->setEnabled(false);
+  f_copy->setEnabled(false);
 
-    connect(f_textedit, SIGNAL(copyAvailable(bool)), f_cut, SLOT(setEnabled(bool)));
-    connect(f_textedit, SIGNAL(copyAvailable(bool)), f_copy, SLOT(setEnabled(bool)));
+  connect(f_cut, SIGNAL(clicked()), f_textedit, SLOT(cut()));
+  connect(f_copy, SIGNAL(clicked()), f_textedit, SLOT(copy()));
+  connect(f_paste, SIGNAL(clicked()), f_textedit, SLOT(paste()));
+
+  connect(f_textedit, SIGNAL(copyAvailable(bool)), f_cut, SLOT(setEnabled(bool)));
+  connect(f_textedit, SIGNAL(copyAvailable(bool)), f_copy, SLOT(setEnabled(bool)));
 
 #ifndef QT_NO_CLIPBOARD
-    connect(QApplication::clipboard(), SIGNAL(dataChanged()), this, SLOT(slotClipboardDataChanged()));
+  connect(QApplication::clipboard(), SIGNAL(dataChanged()), this, SLOT(slotClipboardDataChanged()));
 #endif
 
-    // link
+  // link
 
-    f_link->setShortcut(Qt::CTRL + Qt::Key_L);
+  f_link->setShortcut(Qt::CTRL + Qt::Key_L);
 
-    connect(f_link, SIGNAL(clicked(bool)), this, SLOT(textLink(bool)));
+  connect(f_link, SIGNAL(clicked(bool)), this, SLOT(textLink(bool)));
 
-    // bold, italic & underline
+  // bold, italic & underline
 
-    f_bold->setShortcut(Qt::CTRL + Qt::Key_B);
-    f_italic->setShortcut(Qt::CTRL + Qt::Key_I);
-    f_underline->setShortcut(Qt::CTRL + Qt::Key_U);
+  f_bold->setShortcut(Qt::CTRL + Qt::Key_B);
+  f_italic->setShortcut(Qt::CTRL + Qt::Key_I);
+  f_underline->setShortcut(Qt::CTRL + Qt::Key_U);
 
-    f_strikeout->setIcon(QIcon("../QtSourceCodeBrowser/icons/strikeText.png"));
+  f_strikeout->setIcon(QIcon("../QtSourceCodeBrowser/icons/strikeText.png"));
 
-    connect(f_bold, SIGNAL(clicked()), this, SLOT(textBold()));
-    connect(f_italic, SIGNAL(clicked()), this, SLOT(textItalic()));
-    connect(f_underline, SIGNAL(clicked()), this, SLOT(textUnderline()));
-    connect(f_strikeout, SIGNAL(clicked()), this, SLOT(textStrikeout()));
+  connect(f_bold, SIGNAL(clicked()), this, SLOT(textBold()));
+  connect(f_italic, SIGNAL(clicked()), this, SLOT(textItalic()));
+  connect(f_underline, SIGNAL(clicked()), this, SLOT(textUnderline()));
+  connect(f_strikeout, SIGNAL(clicked()), this, SLOT(textStrikeout()));
 
-    QAction *removeFormat = new QAction(tr("Remove character formatting"), this);
-    removeFormat->setShortcut(QKeySequence("CTRL+M"));
-    connect(removeFormat, SIGNAL(triggered()), this, SLOT(textRemoveFormat()));
-    f_textedit->addAction(removeFormat);
+  QAction* removeFormat = new QAction(tr("Remove character formatting"), this);
+  removeFormat->setShortcut(QKeySequence("CTRL+M"));
+  connect(removeFormat, SIGNAL(triggered()), this, SLOT(textRemoveFormat()));
+  f_textedit->addAction(removeFormat);
 
-    QAction *removeAllFormat = new QAction(tr("Remove all formatting"), this);
-    connect(removeAllFormat, SIGNAL(triggered()), this, SLOT(textRemoveAllFormat()));
-    f_textedit->addAction(removeAllFormat);
+  QAction* removeAllFormat = new QAction(tr("Remove all formatting"), this);
+  connect(removeAllFormat, SIGNAL(triggered()), this, SLOT(textRemoveAllFormat()));
+  f_textedit->addAction(removeAllFormat);
 
-    QAction *textsource = new QAction(tr("Edit document source"), this);
-    textsource->setShortcut(QKeySequence("CTRL+O"));
-    connect(textsource, SIGNAL(triggered()), this, SLOT(textSource()));
-    f_textedit->addAction(textsource);
+  QAction* textsource = new QAction(tr("Edit document source"), this);
+  textsource->setShortcut(QKeySequence("CTRL+O"));
+  connect(textsource, SIGNAL(triggered()), this, SLOT(textSource()));
+  f_textedit->addAction(textsource);
 
-    QMenu *menu = new QMenu(this);
-    menu->addAction(removeAllFormat);
-    menu->addAction(removeFormat);
-    menu->addAction(textsource);
-    f_menu->setMenu(menu);
-    f_menu->setPopupMode(QToolButton::InstantPopup);
+  QMenu* menu = new QMenu(this);
+  menu->addAction(removeAllFormat);
+  menu->addAction(removeFormat);
+  menu->addAction(textsource);
+  f_menu->setMenu(menu);
+  f_menu->setPopupMode(QToolButton::InstantPopup);
 
-    // lists
+  // lists
 
-    f_list_bullet->setShortcut(Qt::CTRL + Qt::Key_Minus);
-    f_list_bullet->setIcon(QIcon("../QtSourceCodeBrowser/icons/bulletList.png"));
-    f_list_ordered->setShortcut(Qt::CTRL + Qt::Key_Equal);
-    f_list_ordered->setIcon(QIcon("../QtSourceCodeBrowser/icons/orderedList.png"));
+  f_list_bullet->setShortcut(Qt::CTRL + Qt::Key_Minus);
+  f_list_bullet->setIcon(QIcon("../QtSourceCodeBrowser/icons/bulletList.png"));
+  f_list_ordered->setShortcut(Qt::CTRL + Qt::Key_Equal);
+  f_list_ordered->setIcon(QIcon("../QtSourceCodeBrowser/icons/orderedList.png"));
 
-    connect(f_list_bullet, SIGNAL(clicked(bool)), this, SLOT(listBullet(bool)));
-    connect(f_list_ordered, SIGNAL(clicked(bool)), this, SLOT(listOrdered(bool)));
+  connect(f_list_bullet, SIGNAL(clicked(bool)), this, SLOT(listBullet(bool)));
+  connect(f_list_ordered, SIGNAL(clicked(bool)), this, SLOT(listOrdered(bool)));
 
-    // indentation
+  // indentation
 
-    f_indent_dec->setShortcut(Qt::CTRL + Qt::Key_Comma);
-    f_indent_inc->setShortcut(Qt::CTRL + Qt::Key_Period);
+  f_indent_dec->setShortcut(Qt::CTRL + Qt::Key_Comma);
+  f_indent_inc->setShortcut(Qt::CTRL + Qt::Key_Period);
 
-    connect(f_indent_inc, SIGNAL(clicked()), this, SLOT(increaseIndentation()));
-    connect(f_indent_dec, SIGNAL(clicked()), this, SLOT(decreaseIndentation()));
+  connect(f_indent_inc, SIGNAL(clicked()), this, SLOT(increaseIndentation()));
+  connect(f_indent_dec, SIGNAL(clicked()), this, SLOT(decreaseIndentation()));
 
-    // font size
+  // font size
 
-    QFontDatabase db;
-    for (int size: db.standardSizes())
-      f_fontsize->addItem(QString::number(size));
+  QFontDatabase db;
+  for (int size: db.standardSizes())
+    f_fontsize->addItem(QString::number(size));
 
-    connect(f_fontsize, SIGNAL(activated(QString)), this, SLOT(textSize(QString)));
-    f_fontsize->setCurrentIndex(f_fontsize->findText(QString::number(QApplication::font().pointSize())));
+  connect(f_fontsize, SIGNAL(activated(QString)), this, SLOT(textSize(QString)));
+  f_fontsize->setCurrentIndex(f_fontsize->findText(QString::number(QApplication::font().pointSize())));
 
-    // text foreground color
+  // text foreground color
 
-    QPixmap pix(16, 16);
-    pix.fill(QApplication::palette().foreground().color());
-    f_fgcolor->setIcon(pix);
+  QPixmap pix(16, 16);
+  pix.fill(QApplication::palette().foreground().color());
+  f_fgcolor->setIcon(pix);
 
-    connect(f_fgcolor, SIGNAL(clicked()), this, SLOT(textFgColor()));
+  connect(f_fgcolor, SIGNAL(clicked()), this, SLOT(textFgColor()));
 
-    // text background color
+  // text background color
 
-    pix.fill(QApplication::palette().background().color());
-    f_bgcolor->setIcon(pix);
+  pix.fill(QApplication::palette().background().color());
+  f_bgcolor->setIcon(pix);
 
-    connect(f_bgcolor, SIGNAL(clicked()), this, SLOT(textBgColor()));
+  connect(f_bgcolor, SIGNAL(clicked()), this, SLOT(textBgColor()));
 
-    // images
-    connect(f_image, SIGNAL(clicked()), this, SLOT(insertImage()));
+  // images
+  connect(f_image, SIGNAL(clicked()), this, SLOT(insertImage()));
 
-    // code
-    f_code->setIcon(QIcon("../QtSourceCodeBrowser/icons/code.png"));
-    f_code->setShortcut(Qt::CTRL + Qt::Key_K);
-    connect(f_code, SIGNAL(clicked(bool)), this, SLOT(insertCode(bool)));
+  // code
+  f_code->setIcon(QIcon("../QtSourceCodeBrowser/icons/code.png"));
+  f_code->setShortcut(Qt::CTRL + Qt::Key_K);
+  connect(f_code, SIGNAL(clicked(bool)), this, SLOT(insertCode(bool)));
+
+  // Qt class links
+  connect(f_textedit, SIGNAL(transformToLinkRequested(QTextCursor)), this, SLOT(transformTextToInternalLink(QTextCursor)));
+  connect(f_textedit, SIGNAL(transformLinkBackRequested()), this, SLOT(transformInternalLinkBack()));
+  connect(f_textedit, SIGNAL(openSourceRequested(QTextCursor)), this, SLOT(openSourceFromPosition(QTextCursor)));
+
+  setMouseTracking(true);
 }
 
 
@@ -261,9 +269,15 @@ void NoteRichTextEdit::textBold() {
 
 
 void NoteRichTextEdit::focusInEvent(QFocusEvent *) {
-    f_textedit->setFocus(Qt::TabFocusReason);
+  f_textedit->setFocus(Qt::TabFocusReason);
 }
 
+void NoteRichTextEdit::mouseMoveEvent(QMouseEvent* event)
+{
+  if (event->modifiers() == Qt::CTRL) {
+    transformInternalLinkBack();
+  }
+}
 
 void NoteRichTextEdit::textUnderline() {
     QTextCharFormat fmt;
@@ -634,4 +648,45 @@ void NoteRichTextEdit::insertCode(bool checked) {
     cursor.insertHtml(codeInHtml);
   }
   cursor.endEditBlock();
+}
+
+void NoteRichTextEdit::transformTextToInternalLink(QTextCursor const& cursor)
+{
+  if (!m_previousHtmlSelection.isEmpty())
+    return;
+
+  f_textedit->viewport()->setCursor(QCursor(Qt::PointingHandCursor));
+  m_previousCursor = cursor;
+  QString qtClassHtml = m_previousCursor.selection().toHtml().split("<!--StartFragment-->").at(1).split("<!--EndFragment-->").at(0);
+  m_previousHtmlSelection = qtClassHtml;
+  QRegExp colorCSS("([ ;]color:#)([A-Fa-f0-9]{6})");
+  QRegExp styleCSS("(style=\")");
+  colorCSS.setMinimal(true);
+  int colorIndex = colorCSS.indexIn(qtClassHtml);
+  if (colorIndex != -1)
+    qtClassHtml.replace(colorIndex+colorCSS.cap(1).length(), 6, "46A2DA");
+  else
+    qtClassHtml.insert(styleCSS.indexIn(qtClassHtml)+styleCSS.cap(0).length(), "color:#46A2DA; ");
+  m_previousCursor.removeSelectedText();
+  m_previousCursor.insertHtml(qtClassHtml);
+  m_previousCursor.setPosition(m_previousCursor.position()-1);
+  m_previousCursor.select(QTextCursor::WordUnderCursor);
+}
+
+void NoteRichTextEdit::transformInternalLinkBack()
+{
+  if (m_previousCursor.selection().toHtml().isEmpty())
+    return;
+
+  f_textedit->viewport()->setCursor(QCursor(Qt::IBeamCursor));
+  m_previousCursor.removeSelectedText();
+  m_previousCursor.insertHtml(m_previousHtmlSelection);
+  m_previousHtmlSelection.clear();
+}
+
+void NoteRichTextEdit::openSourceFromPosition(QTextCursor const& cursor)
+{
+  QTextCursor copyCursor = cursor;
+  copyCursor.select(QTextCursor::WordUnderCursor);
+  emit openSourceRequested(copyCursor.selectedText());
 }
