@@ -64,6 +64,8 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   while (sourceDirectory.isEmpty())
   {
     sourceDirectory = QInputDialog::getText(this, "Source Directory", "Provide the source directory");
+    if (sourceDirectory.endsWith("/"))
+      sourceDirectory.remove(sourceDirectory.size()-1, 1);
     settings.setValue("SourceDirectory", sourceDirectory);
   }
   m_rootDirectoryName = settings.value("SourceDirectory").toString();
