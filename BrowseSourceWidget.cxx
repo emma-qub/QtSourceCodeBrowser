@@ -47,11 +47,11 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   connect(editNotesOffAction, SIGNAL(triggered()), m_notesTextEdit, SLOT(hide()));
 
   // Sources and Notes Splitter
-  m_sourcesNoteSplitter = new QSplitter;
-  m_sourcesNoteSplitter->addWidget(m_sourcesEditor);
-  m_sourcesNoteSplitter->addWidget(m_notesTextEdit);
-  m_sourcesNoteSplitter->setStretchFactor(0, 1);
-  m_sourcesNoteSplitter->setStretchFactor(1, 0);
+  m_sourcesNotesSplitter = new QSplitter;
+  m_sourcesNotesSplitter->addWidget(m_sourcesEditor);
+  m_sourcesNotesSplitter->addWidget(m_notesTextEdit);
+  m_sourcesNotesSplitter->setStretchFactor(0, 1);
+  m_sourcesNotesSplitter->setStretchFactor(1, 0);
   m_notesTextEdit->hide();
 
   // Settings
@@ -128,7 +128,7 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   // Main part
   QSplitter* hsplitter = new QSplitter;
   hsplitter->addWidget(vsplitter);
-  hsplitter->addWidget(m_sourcesNoteSplitter);
+  hsplitter->addWidget(m_sourcesNotesSplitter);
   hsplitter->setStretchFactor(0, 0);
   hsplitter->setStretchFactor(1, 1);
 

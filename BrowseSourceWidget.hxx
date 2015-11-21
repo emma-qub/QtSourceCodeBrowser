@@ -47,7 +47,7 @@ private:
 
   CodeEditor* m_sourcesEditor;
   NoteRichTextEdit* m_notesTextEdit;
-  QSplitter* m_sourcesNoteSplitter;
+  QSplitter* m_sourcesNotesSplitter;
 
   SourceFileSystemModel* m_sourceModel;
   QTreeView* m_sourcesTreeView;
