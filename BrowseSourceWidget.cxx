@@ -155,10 +155,6 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   m_notesTextEdit->show();
 }
 
-void BrowseSourceWidget::expandAll() {
-  m_sourcesTreeView->expandAll();
-}
-
 void BrowseSourceWidget::keyReleaseEvent(QKeyEvent* p_event) {
   QString currentSourceOpen = m_openDocumentsView->currentIndex().data(Qt::ToolTipRole).toString();
   if (currentSourceOpen.isEmpty())
@@ -286,23 +282,23 @@ void BrowseSourceWidget::openSourceCodeFromOpenDocuments(QModelIndex const& p_in
   openDocumentInEditor(fileName, absoluteFilePath);
 }
 
-void BrowseSourceWidget::openDocumentInEditor(QString const& fileName, QString const& absoluteFilePath) {
-  QFile sourceFile(absoluteFilePath);
+void BrowseSourceWidget::openDocumentInEditor(QString const& p_fileName, QString const& p_absoluteFilePath) {
+  QFile sourceFile(p_absoluteFilePath);
   if (!sourceFile.exists()) {
-    qDebug() << "404 Not Found" << "The file\n"+absoluteFilePath+"\ndoes not exist on this computer.";
+    qDebug() << "404 Not Found" << "The file\n"+p_absoluteFilePath+"\ndoes not exist on this computer.";
     return;
   }
-  m_openDocumentsModel->insertDocument(fileName, absoluteFilePath);
-  m_sourcesEditor->setPlainText(getSourceContent(absoluteFilePath));
-  QModelIndex openIndex = m_openDocumentsProxyModel->mapFromSource(m_openDocumentsModel->indexFromFile(fileName, absoluteFilePath));
+  m_openDocumentsModel->insertDocument(p_fileName, p_absoluteFilePath);
+  m_sourcesEditor->setPlainText(getSourceContent(p_absoluteFilePath));
+  QModelIndex openIndex = m_openDocumentsProxyModel->mapFromSource(m_openDocumentsModel->indexFromFile(p_fileName, p_absoluteFilePath));
   m_openDocumentsView->setCurrentIndex(openIndex);
 
   saveNotesFromSource();
-  openNotesFromSource(fileName);
+  openNotesFromSource(p_fileName);
 }
 
-QString BrowseSourceWidget::getSourceContent(QString const& absoluteFilePath) {
-  QFile sourceFile(absoluteFilePath);
+QString BrowseSourceWidget::getSourceContent(QString const& p_absoluteFilePath) {
+  QFile sourceFile(p_absoluteFilePath);
   if (!sourceFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
     QMessageBox::warning(this, "Opening issue", sourceFile.errorString());
   }
@@ -310,8 +306,7 @@ QString BrowseSourceWidget::getSourceContent(QString const& absoluteFilePath) {
   QTextStream in(&sourceFile);
 
   QString content;
-  while(!in.atEnd())
-  {
+  while(!in.atEnd()) {
     content.append(in.readLine());
     content.append("\n");
   }
@@ -321,8 +316,7 @@ QString BrowseSourceWidget::getSourceContent(QString const& absoluteFilePath) {
   return content;
 }
 
-void BrowseSourceWidget::initSourceSearchModel()
-{
+void BrowseSourceWidget::initSourceSearchModel() {
   QSettings settings("ValentinMicheletINC", "QtSourceBrowser");
   fillSourceModelFromDirectory(settings.value("SourceDirectory").toString());
 }
@@ -333,25 +327,25 @@ void BrowseSourceWidget::fillSourceModelFromDirectory(QString const& p_directory
   QStringList subDirectories = directory.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
   QStringList sourceCodeFiles = directory.entryList(QStringList() << "*.cpp" << "*.h", QDir::Files);
 
-  for (QString const& sourceCodeFile: sourceCodeFiles)
-  {
+  for (QString const& sourceCodeFile: sourceCodeFiles) {
     m_sourceSearchModel->insertDocument(sourceCodeFile, p_directoryName+QDir::separator()+sourceCodeFile);
   }
 
-  for (QString const& subDirectory: subDirectories)
-  {
+  for (QString const& subDirectory: subDirectories) {
     fillSourceModelFromDirectory(p_directoryName+QDir::separator()+subDirectory);
   }
 }
 
 void BrowseSourceWidget::saveNotesFromSource()
 {
-  if (m_notesFilePath.isEmpty())
+  if (m_notesFilePath.isEmpty()) {
     return;
+  }
 
   QFile noteFile(m_notesFilePath);
-  if (!noteFile.open(QIODevice::WriteOnly | QIODevice::Text))
+  if (!noteFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
     QMessageBox::warning(this, "Writting issue", noteFile.errorString());
+  }
 
   QTextStream in(&noteFile);
 
@@ -360,28 +354,26 @@ void BrowseSourceWidget::saveNotesFromSource()
   noteFile.close();
 }
 
-void BrowseSourceWidget::getNotesFileInfo(QString const& fileName)
-{
-  QString notesFileName = fileName;
+void BrowseSourceWidget::getNotesFileInfo(QString const& p_fileName) {
+  QString notesFileName = p_fileName;
   notesFileName.replace(QRegExp("(\\.cpp$|\\.h$|_p\\.h$)"), ".txt");
 
   m_notesFileInfo = QFileInfo("../QtSourceCodeBrowser/notes/"+notesFileName);
   m_notesFilePath = m_notesFileInfo.absoluteFilePath();
 }
 
-void BrowseSourceWidget::openNotesFromSource(QString const& fileName)
-{
+void BrowseSourceWidget::openNotesFromSource(QString const& p_fileName) {
   QFileInfo previousFileInfo = m_notesFileInfo;
-  getNotesFileInfo(fileName);
+  getNotesFileInfo(p_fileName);
 
-  if (previousFileInfo == m_notesFileInfo)
+  if (previousFileInfo == m_notesFileInfo) {
     return;
+  }
 
   m_notesTextEdit->setText("");
 
   m_notesExist = m_notesFileInfo.exists();
-  if (m_notesExist)
-  {
+  if (m_notesExist) {
     m_notesTextEdit->setText(getSourceContent(m_notesFilePath));
   }
 }

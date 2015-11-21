@@ -25,46 +25,41 @@
 #define NOTERICHTEXTEDIT_H
 
 #include <QPointer>
+
 #include "ui_NoteRichTextEdit.h"
 
-/**
- * @Brief A simple rich-text editor
- */
-class NoteRichTextEdit : public QWidget, protected Ui::NoteRichTextEdit {
+class NoteRichTextEdit: public QWidget, protected Ui::NoteRichTextEdit {
   Q_OBJECT
 
 public:
-  NoteRichTextEdit(QWidget *parent = 0);
+  NoteRichTextEdit(QWidget* p_parent = nullptr);
 
-  QString toPlainText() const { return f_textedit->toPlainText(); }
+  QString toPlainText() const;
   QString toHtml() const;
-  QTextDocument *document() { return f_textedit->document(); }
-  QTextCursor    textCursor() const { return f_textedit->textCursor(); }
-  void           setTextCursor(const QTextCursor& cursor) { f_textedit->setTextCursor(cursor); }
-
-signals:
-  void openSourceRequested(QString);
+  QTextDocument* document() const;
+  QTextCursor textCursor() const;
+  void setTextCursor(const QTextCursor& p_cursor);
 
 public slots:
-  void setText(const QString &text);
+  void setText(const QString& p_text);
 
 protected slots:
-  void setPlainText(const QString &text) { f_textedit->setPlainText(text); }
-  void setHtml(const QString &text)      { f_textedit->setHtml(text); }
+  void setPlainText(const QString& p_text);
+  void setHtml(const QString& p_text);
   void textRemoveFormat();
   void textRemoveAllFormat();
   void textBold();
   void textUnderline();
   void textStrikeout();
   void textItalic();
-  void textSize(const QString &p);
-  void textLink(bool checked);
-  void textStyle(int index);
+  void textSize(const QString& p_point);
+  void textLink(bool p_checked);
+  void textStyle(int p_index);
   void textFgColor();
   void textBgColor();
-  void listBullet(bool checked);
-  void listOrdered(bool checked);
-  void slotCurrentCharFormatChanged(const QTextCharFormat &format);
+  void listBullet(bool p_checked);
+  void listOrdered(bool p_checked);
+  void slotCurrentCharFormatChanged(const QTextCharFormat& p_format);
   void slotCursorPositionChanged();
   void slotClipboardDataChanged();
   void increaseIndentation();
@@ -72,19 +67,22 @@ protected slots:
   void insertImage();
   void textSource();
   void insertCode(bool checked);
-  void transformTextToInternalLink(QTextCursor const& cursor);
+  void transformTextToInternalLink(QTextCursor const& p_cursor);
   void transformInternalLinkBack();
-  void openSourceFromPosition(const QTextCursor& cursor);
+  void openSourceFromPosition(const QTextCursor& p_cursor);
+
+signals:
+  void openSourceRequested(QString);
 
 protected:
-  void mergeFormatOnWordOrSelection(const QTextCharFormat &format);
-  void fontChanged(const QFont &f);
-  void fgColorChanged(const QColor &c);
-  void bgColorChanged(const QColor &c);
-  void list(bool checked, QTextListFormat::Style style);
-  void indent(int delta);
-  void focusInEvent(QFocusEvent *event) override;
-  void mouseMoveEvent(QMouseEvent* event) override;
+  void mergeFormatOnWordOrSelection(const QTextCharFormat& p_format);
+  void fontChanged(const QFont& p_font);
+  void fgColorChanged(const QColor& p_color);
+  void bgColorChanged(const QColor& p_color);
+  void list(bool p_checked, QTextListFormat::Style p_style);
+  void indent(int p_delta);
+  void focusInEvent(QFocusEvent* p_event) override;
+  void mouseMoveEvent(QMouseEvent* p_event) override;
 
   QStringList m_paragraphItems;
   int m_fontsize_h1;
@@ -92,12 +90,14 @@ protected:
   int m_fontsize_h3;
   int m_fontsize_h4;
 
-  enum ParagraphItems { ParagraphStandard = 0,
-                        ParagraphHeading1,
-                        ParagraphHeading2,
-                        ParagraphHeading3,
-                        ParagraphHeading4,
-                        ParagraphMonospace };
+  enum ParagraphItems {
+    ParagraphStandard = 0,
+    ParagraphHeading1,
+    ParagraphHeading2,
+    ParagraphHeading3,
+    ParagraphHeading4,
+    ParagraphMonospace
+  };
 
   QPointer<QTextList> m_lastBlockList;
 

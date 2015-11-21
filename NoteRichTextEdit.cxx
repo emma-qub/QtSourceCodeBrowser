@@ -40,8 +40,8 @@
 #include <QDialog>
 #include <QTextDocumentFragment>
 
-NoteRichTextEdit::NoteRichTextEdit(QWidget* parent):
-  QWidget(parent),
+NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
+  QWidget(p_parent),
   m_previousCursor(),
   m_previousHtmlSelection() {
 
@@ -196,6 +196,32 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* parent):
   setMouseTracking(true);
 }
 
+QString NoteRichTextEdit::toPlainText() const {
+  return f_textedit->toPlainText();
+}
+
+QString NoteRichTextEdit::toHtml() const {
+  QString s = f_textedit->toHtml();
+  // convert emails to links
+  s = s.replace(QRegExp("(<[^a][^>]+>(?:<span[^>]+>)?|\\s)([a-zA-Z\\d]+@[a-zA-Z\\d]+\\.[a-zA-Z]+)"), "\\1<a href=\"mailto:\\2\">\\2</a>");
+  // convert links
+  s = s.replace(QRegExp("(<[^a][^>]+>(?:<span[^>]+>)?|\\s)((?:https?|ftp|file)://[^\\s'\"<>]+)"), "\\1<a href=\"\\2\">\\2</a>");
+  // see also: Utils::linkify()
+  return s;
+}
+
+QTextDocument* NoteRichTextEdit::document() const {
+  return f_textedit->document();
+}
+
+QTextCursor NoteRichTextEdit::textCursor() const {
+  return f_textedit->textCursor();
+}
+
+void NoteRichTextEdit::setTextCursor(const QTextCursor& p_cursor) {
+  f_textedit->setTextCursor(p_cursor);
+}
+
 void NoteRichTextEdit::textSource() {
   QDialog* dialog = new QDialog(this);
   QPlainTextEdit* pte = new QPlainTextEdit(dialog);
@@ -211,120 +237,116 @@ void NoteRichTextEdit::textSource() {
 
   delete dialog;
 }
+void NoteRichTextEdit::setPlainText(const QString& p_text) {
+  f_textedit->setPlainText(p_text);
+}
 
+void NoteRichTextEdit::setHtml(const QString& p_text) {
+  f_textedit->setHtml(p_text);
+}
 
 void NoteRichTextEdit::textRemoveFormat() {
-    QTextCharFormat fmt;
-    fmt.setFontWeight(QFont::Normal);
-    fmt.setFontUnderline  (false);
-    fmt.setFontStrikeOut  (false);
-    fmt.setFontItalic     (false);
-    fmt.setFontPointSize  (9);
-//  fmt.setFontFamily     ("Helvetica");
-//  fmt.setFontStyleHint  (QFont::SansSerif);
-//  fmt.setFontFixedPitch (true);
+  QTextCharFormat fmt;
+  fmt.setFontWeight(QFont::Normal);
+  fmt.setFontUnderline(false);
+  fmt.setFontStrikeOut(false);
+  fmt.setFontItalic(false);
+  fmt.setFontPointSize(9);
 
-    f_bold      ->setChecked(false);
-    f_underline ->setChecked(false);
-    f_italic    ->setChecked(false);
-    f_strikeout ->setChecked(false);
-    f_fontsize  ->setCurrentIndex(f_fontsize->findText("9"));
+  f_bold->setChecked(false);
+  f_underline->setChecked(false);
+  f_italic->setChecked(false);
+  f_strikeout->setChecked(false);
+  f_fontsize->setCurrentIndex(f_fontsize->findText("9"));
 
-//  QTextBlockFormat bfmt = cursor.blockFormat();
-//  bfmt->setIndent(0);
+  fmt.clearBackground();
 
-    fmt.clearBackground();
-
-    mergeFormatOnWordOrSelection(fmt);
+  mergeFormatOnWordOrSelection(fmt);
 }
-
 
 void NoteRichTextEdit::textRemoveAllFormat() {
-    f_bold      ->setChecked(false);
-    f_underline ->setChecked(false);
-    f_italic    ->setChecked(false);
-    f_strikeout ->setChecked(false);
-    f_fontsize  ->setCurrentIndex(f_fontsize->findText("9"));
-    QString text = f_textedit->toPlainText();
-    f_textedit->setPlainText(text);
+  f_bold->setChecked(false);
+  f_underline->setChecked(false);
+  f_italic->setChecked(false);
+  f_strikeout->setChecked(false);
+  f_fontsize->setCurrentIndex(f_fontsize->findText("9"));
+  QString text = f_textedit->toPlainText();
+  f_textedit->setPlainText(text);
 }
-
 
 void NoteRichTextEdit::textBold() {
-    QTextCharFormat fmt;
-    fmt.setFontWeight(f_bold->isChecked() ? QFont::Bold : QFont::Normal);
-    mergeFormatOnWordOrSelection(fmt);
+  QTextCharFormat fmt;
+  fmt.setFontWeight(f_bold->isChecked() ? QFont::Bold : QFont::Normal);
+  mergeFormatOnWordOrSelection(fmt);
 }
 
+void NoteRichTextEdit::focusInEvent(QFocusEvent* p_event) {
+  Q_UNUSED(p_event);
 
-void NoteRichTextEdit::focusInEvent(QFocusEvent* ) {
   f_textedit->setFocus(Qt::TabFocusReason);
 }
 
-void NoteRichTextEdit::mouseMoveEvent(QMouseEvent* event)
+void NoteRichTextEdit::mouseMoveEvent(QMouseEvent* p_event)
 {
-  if (event->modifiers() == Qt::CTRL) {
+  if (p_event->modifiers() == Qt::CTRL) {
     transformInternalLinkBack();
   }
 }
 
 void NoteRichTextEdit::textUnderline() {
-    QTextCharFormat fmt;
-    fmt.setFontUnderline(f_underline->isChecked());
-    mergeFormatOnWordOrSelection(fmt);
+  QTextCharFormat fmt;
+  fmt.setFontUnderline(f_underline->isChecked());
+  mergeFormatOnWordOrSelection(fmt);
 }
 
 void NoteRichTextEdit::textItalic() {
-    QTextCharFormat fmt;
-    fmt.setFontItalic(f_italic->isChecked());
-    mergeFormatOnWordOrSelection(fmt);
+  QTextCharFormat fmt;
+  fmt.setFontItalic(f_italic->isChecked());
+  mergeFormatOnWordOrSelection(fmt);
 }
 
 void NoteRichTextEdit::textStrikeout() {
-    QTextCharFormat fmt;
-    fmt.setFontStrikeOut(f_strikeout->isChecked());
-    mergeFormatOnWordOrSelection(fmt);
+  QTextCharFormat fmt;
+  fmt.setFontStrikeOut(f_strikeout->isChecked());
+  mergeFormatOnWordOrSelection(fmt);
 }
 
-void NoteRichTextEdit::textSize(const QString &p) {
-    qreal pointSize = p.toFloat();
-    if (p.toFloat() > 0) {
-        QTextCharFormat fmt;
-        fmt.setFontPointSize(pointSize);
-        mergeFormatOnWordOrSelection(fmt);
+void NoteRichTextEdit::textSize(const QString &p_point) {
+  qreal pointSize = p_point.toFloat();
+  if (pointSize > 0) {
+    QTextCharFormat fmt;
+    fmt.setFontPointSize(pointSize);
+    mergeFormatOnWordOrSelection(fmt);
+  }
+}
+
+void NoteRichTextEdit::textLink(bool p_checked) {
+  bool unlink = false;
+  QTextCharFormat fmt;
+  if (p_checked) {
+    QString url = f_textedit->currentCharFormat().anchorHref();
+    bool ok;
+    QString newUrl = QInputDialog::getText(this, tr("Create a link"), tr("Link URL:"), QLineEdit::Normal, url, &ok);
+    if (ok) {
+      fmt.setAnchor(true);
+      fmt.setAnchorHref(newUrl);
+      fmt.setForeground(QApplication::palette().color(QPalette::Link));
+      fmt.setFontUnderline(true);
+    } else {
+      unlink = true;
     }
+  } else {
+    unlink = true;
+  }
+  if (unlink) {
+    fmt.setAnchor(false);
+    fmt.setForeground(QApplication::palette().color(QPalette::Text));
+    fmt.setFontUnderline(false);
+  }
+  mergeFormatOnWordOrSelection(fmt);
 }
 
-void NoteRichTextEdit::textLink(bool checked) {
-    bool unlink = false;
-    QTextCharFormat fmt;
-    if (checked) {
-        QString url = f_textedit->currentCharFormat().anchorHref();
-        bool ok;
-        QString newUrl = QInputDialog::getText(this, tr("Create a link"),
-                                        tr("Link URL:"), QLineEdit::Normal,
-                                        url,
-                                        &ok);
-        if (ok) {
-            fmt.setAnchor(true);
-            fmt.setAnchorHref(newUrl);
-            fmt.setForeground(QApplication::palette().color(QPalette::Link));
-            fmt.setFontUnderline(true);
-          } else {
-            unlink = true;
-            }
-      } else {
-        unlink = true;
-        }
-    if (unlink) {
-        fmt.setAnchor(false);
-        fmt.setForeground(QApplication::palette().color(QPalette::Text));
-        fmt.setFontUnderline(false);
-        }
-    mergeFormatOnWordOrSelection(fmt);
-}
-
-void NoteRichTextEdit::textStyle(int index) {
+void NoteRichTextEdit::textStyle(int p_index) {
   QTextCursor cursor = f_textedit->textCursor();
   cursor.beginEditBlock();
 
@@ -336,23 +358,23 @@ void NoteRichTextEdit::textStyle(int index) {
   cursor.setCharFormat(fmt);
   f_textedit->setCurrentCharFormat(fmt);
 
-  if (index == ParagraphHeading1 || index == ParagraphHeading2
-   || index == ParagraphHeading3 || index == ParagraphHeading4) {
-    if (index == ParagraphHeading1) {
+  if (p_index == ParagraphHeading1 || p_index == ParagraphHeading2
+   || p_index == ParagraphHeading3 || p_index == ParagraphHeading4) {
+    if (p_index == ParagraphHeading1) {
       fmt.setFontPointSize(m_fontsize_h1);
     }
-    if (index == ParagraphHeading2) {
+    if (p_index == ParagraphHeading2) {
       fmt.setFontPointSize(m_fontsize_h2);
     }
-    if (index == ParagraphHeading3) {
+    if (p_index == ParagraphHeading3) {
       fmt.setFontPointSize(m_fontsize_h3);
     }
-    if (index == ParagraphHeading4) {
+    if (p_index == ParagraphHeading4) {
       fmt.setFontPointSize(m_fontsize_h4);
     }
     fmt.setFontWeight(QFont::Bold);
   }
-  if (index == ParagraphMonospace) {
+  if (p_index == ParagraphMonospace) {
     fmt = cursor.charFormat();
     fmt.setFontFamily("Monospace");
     fmt.setFontStyleHint(QFont::Monospace);
@@ -398,24 +420,24 @@ void NoteRichTextEdit::textBgColor() {
   bgColorChanged(col);
 }
 
-void NoteRichTextEdit::listBullet(bool checked) {
-  if (checked) {
+void NoteRichTextEdit::listBullet(bool p_checked) {
+  if (p_checked) {
     f_list_ordered->setChecked(false);
   }
-  list(checked, QTextListFormat::ListDisc);
+  list(p_checked, QTextListFormat::ListDisc);
 }
 
-void NoteRichTextEdit::listOrdered(bool checked) {
-  if (checked) {
+void NoteRichTextEdit::listOrdered(bool p_checked) {
+  if (p_checked) {
     f_list_bullet->setChecked(false);
   }
-  list(checked, QTextListFormat::ListDecimal);
+  list(p_checked, QTextListFormat::ListDecimal);
 }
 
-void NoteRichTextEdit::list(bool checked, QTextListFormat::Style style) {
+void NoteRichTextEdit::list(bool p_checked, QTextListFormat::Style p_style) {
   QTextCursor cursor = f_textedit->textCursor();
   cursor.beginEditBlock();
-  if (!checked) {
+  if (!p_checked) {
     QTextBlockFormat obfmt = cursor.blockFormat();
     QTextBlockFormat bfmt;
     bfmt.setIndent(obfmt.indent());
@@ -425,28 +447,28 @@ void NoteRichTextEdit::list(bool checked, QTextListFormat::Style style) {
     if (cursor.currentList()) {
       listFmt = cursor.currentList()->format();
     }
-    listFmt.setStyle(style);
+    listFmt.setStyle(p_style);
     cursor.createList(listFmt);
   }
   cursor.endEditBlock();
 }
 
-void NoteRichTextEdit::mergeFormatOnWordOrSelection(const QTextCharFormat &format) {
+void NoteRichTextEdit::mergeFormatOnWordOrSelection(const QTextCharFormat &p_format) {
   QTextCursor cursor = f_textedit->textCursor();
   if (!cursor.hasSelection()) {
     cursor.select(QTextCursor::WordUnderCursor);
   }
-  cursor.mergeCharFormat(format);
-  f_textedit->mergeCurrentCharFormat(format);
+  cursor.mergeCharFormat(p_format);
+  f_textedit->mergeCurrentCharFormat(p_format);
   f_textedit->setFocus(Qt::TabFocusReason);
 }
 
 void NoteRichTextEdit::slotCursorPositionChanged() {
   QTextList* l = f_textedit->textCursor().currentList();
-  if (m_lastBlockList && (l == m_lastBlockList || (l != 0 && m_lastBlockList != 0
-                               && l->format().style() == m_lastBlockList->format().style()))) {
+  if (m_lastBlockList && (l == m_lastBlockList || (l != 0 && m_lastBlockList != 0 && l->format().style() == m_lastBlockList->format().style()))) {
     return;
   }
+
   m_lastBlockList = l;
   if (l) {
     QTextListFormat lfmt = l->format();
@@ -466,22 +488,22 @@ void NoteRichTextEdit::slotCursorPositionChanged() {
   }
 }
 
-void NoteRichTextEdit::fontChanged(const QFont &f) {
-  f_fontsize->setCurrentIndex(f_fontsize->findText(QString::number(f.pointSize())));
-  f_bold->setChecked(f.bold());
-  f_italic->setChecked(f.italic());
-  f_underline->setChecked(f.underline());
-  f_strikeout->setChecked(f.strikeOut());
-  if (f.pointSize() == m_fontsize_h1) {
+void NoteRichTextEdit::fontChanged(const QFont &p_font) {
+  f_fontsize->setCurrentIndex(f_fontsize->findText(QString::number(p_font.pointSize())));
+  f_bold->setChecked(p_font.bold());
+  f_italic->setChecked(p_font.italic());
+  f_underline->setChecked(p_font.underline());
+  f_strikeout->setChecked(p_font.strikeOut());
+  if (p_font.pointSize() == m_fontsize_h1) {
     f_paragraph->setCurrentIndex(ParagraphHeading1);
-  } else if (f.pointSize() == m_fontsize_h2) {
+  } else if (p_font.pointSize() == m_fontsize_h2) {
     f_paragraph->setCurrentIndex(ParagraphHeading2);
-  } else if (f.pointSize() == m_fontsize_h3) {
+  } else if (p_font.pointSize() == m_fontsize_h3) {
     f_paragraph->setCurrentIndex(ParagraphHeading3);
-  } else if (f.pointSize() == m_fontsize_h4) {
+  } else if (p_font.pointSize() == m_fontsize_h4) {
     f_paragraph->setCurrentIndex(ParagraphHeading4);
   } else {
-    if (f.fixedPitch() && f.family() == "Monospace") {
+    if (p_font.fixedPitch() && p_font.family() == "Monospace") {
       f_paragraph->setCurrentIndex(ParagraphMonospace);
     } else {
       f_paragraph->setCurrentIndex(ParagraphStandard);
@@ -505,33 +527,33 @@ void NoteRichTextEdit::fontChanged(const QFont &f) {
   }
 }
 
-void NoteRichTextEdit::fgColorChanged(const QColor &c) {
+void NoteRichTextEdit::fgColorChanged(const QColor &p_color) {
   QPixmap pix(16, 16);
-  if (c.isValid()) {
-    pix.fill(c);
+  if (p_color.isValid()) {
+    pix.fill(p_color);
   } else {
     pix.fill(QApplication::palette().foreground().color());
   }
   f_fgcolor->setIcon(pix);
 }
 
-void NoteRichTextEdit::bgColorChanged(const QColor &c) {
+void NoteRichTextEdit::bgColorChanged(const QColor &p_color) {
   QPixmap pix(16, 16);
-  if (c.isValid()) {
-    pix.fill(c);
+  if (p_color.isValid()) {
+    pix.fill(p_color);
   } else {
     pix.fill(QApplication::palette().background().color());
   }
   f_bgcolor->setIcon(pix);
 }
 
-void NoteRichTextEdit::slotCurrentCharFormatChanged(const QTextCharFormat &format) {
-  fontChanged(format.font());
-  bgColorChanged((format.background().isOpaque()) ? format.background().color() : QColor());
-  fgColorChanged((format.foreground().isOpaque()) ? format.foreground().color() : QColor());
-  f_link->setChecked(format.isAnchor());
+void NoteRichTextEdit::slotCurrentCharFormatChanged(const QTextCharFormat &p_format) {
+  fontChanged(p_format.font());
+  bgColorChanged((p_format.background().isOpaque()) ? p_format.background().color() : QColor());
+  fgColorChanged((p_format.foreground().isOpaque()) ? p_format.foreground().color() : QColor());
+  f_link->setChecked(p_format.isAnchor());
 
-  f_code->setChecked(format.fontFamily() == "mono");
+  f_code->setChecked(p_format.fontFamily() == "mono");
 }
 
 void NoteRichTextEdit::slotClipboardDataChanged() {
@@ -539,16 +561,6 @@ void NoteRichTextEdit::slotClipboardDataChanged() {
   if (const QMimeData* md = QApplication::clipboard()->mimeData())
     f_paste->setEnabled(md->hasText());
 #endif
-}
-
-QString NoteRichTextEdit::toHtml() const {
-  QString s = f_textedit->toHtml();
-  // convert emails to links
-  s = s.replace(QRegExp("(<[^a][^>]+>(?:<span[^>]+>)?|\\s)([a-zA-Z\\d]+@[a-zA-Z\\d]+\\.[a-zA-Z]+)"), "\\1<a href=\"mailto:\\2\">\\2</a>");
-  // convert links
-  s = s.replace(QRegExp("(<[^a][^>]+>(?:<span[^>]+>)?|\\s)((?:https?|ftp|file)://[^\\s'\"<>]+)"), "\\1<a href=\"\\2\">\\2</a>");
-  // see also: Utils::linkify()
-  return s;
 }
 
 void NoteRichTextEdit::increaseIndentation() {
@@ -559,35 +571,34 @@ void NoteRichTextEdit::decreaseIndentation() {
   indent(-1);
 }
 
-void NoteRichTextEdit::indent(int delta) {
+void NoteRichTextEdit::indent(int p_delta) {
   QTextCursor cursor = f_textedit->textCursor();
   cursor.beginEditBlock();
   QTextBlockFormat bfmt = cursor.blockFormat();
   int ind = bfmt.indent();
-  if (ind + delta >= 0) {
-    bfmt.setIndent(ind + delta);
+  if (ind + p_delta >= 0) {
+    bfmt.setIndent(ind + p_delta);
   }
   cursor.setBlockFormat(bfmt);
   cursor.endEditBlock();
 }
 
-void NoteRichTextEdit::setText(const QString& text) {
-  if (text.isEmpty()) {
-    setPlainText(text);
+void NoteRichTextEdit::setText(const QString& p_text) {
+  if (p_text.isEmpty()) {
+    setPlainText(p_text);
     return;
   }
-  if (text[0] == '<') {
-    setHtml(text);
+  if (p_text[0] == '<') {
+    setHtml(p_text);
   } else {
-    setPlainText(text);
+    setPlainText(p_text);
   }
 }
 
 void NoteRichTextEdit::insertImage() {
   QSettings s;
   QString attdir = s.value("general/filedialog-path").toString();
-  QString file = QFileDialog::getOpenFileName(
-    this, tr("Select an image"), attdir, tr("JPEG (*.jpg);; GIF (*.gif);; PNG (*.png);; BMP (*.bmp);; All (*)"));
+  QString file = QFileDialog::getOpenFileName(this, tr("Select an image"), attdir, tr("JPEG (*.jpg);; GIF (*.gif);; PNG (*.png);; BMP (*.bmp);; All (*)"));
   QImage image = QImageReader(file).read();
 
   f_textedit->dropImage(image, QFileInfo(file).suffix().toUpper().toLocal8Bit().data());
@@ -596,6 +607,7 @@ void NoteRichTextEdit::insertImage() {
 void NoteRichTextEdit::insertCode(bool checked) {
   QTextCursor cursor = f_textedit->textCursor();
   cursor.beginEditBlock();
+
   if (!checked) {
     cursor.select(QTextCursor::BlockUnderCursor);
     QString selectedText = cursor.selection().toPlainText();
@@ -605,10 +617,12 @@ void NoteRichTextEdit::insertCode(bool checked) {
     if (!cursor.hasSelection()) {
       cursor.select(QTextCursor::LineUnderCursor);
     }
+
     QStringList codePlainTextStringList = cursor.selection().toPlainText().split("\n");
     codePlainTextStringList.prepend("_");
     codePlainTextStringList.append(" ");
     int maxLineLength = 80;
+
     for (int k = 0; k < codePlainTextStringList.size(); ++k) {
       QString currentLine = codePlainTextStringList.at(k);
       currentLine.prepend("  ");
@@ -616,36 +630,45 @@ void NoteRichTextEdit::insertCode(bool checked) {
         currentLine.append(" ");
       codePlainTextStringList.replace(k, currentLine);
     }
+
     QString codeInHtml = "<span style=\"font-family: mono; background-color: #404244; color: #FFFFFF;\">"+codePlainTextStringList.join("\n").replace("<", "&lt;").replace(" ", "&nbsp;").replace("\n", "<br/>")+"</span>";
     QRegExp qtWords("\\bQ[A-Za-z]+\\b");
     qtWords.setMinimal(true);
+
     int i = -1;
     while ((i = qtWords.indexIn(codeInHtml, i+1)) >= 0) {
       codeInHtml.replace(i, qtWords.cap(0).length(), "<span style=\"font-weight: bold; color: #5CAA15;\">"+qtWords.cap(0)+"</span>");
       i += qtWords.cap(0).length()+58;
     }
+
     cursor.removeSelectedText();
     cursor.insertHtml(codeInHtml);
   }
   cursor.endEditBlock();
 }
 
-void NoteRichTextEdit::transformTextToInternalLink(QTextCursor const& cursor) {
-  if (!m_previousHtmlSelection.isEmpty())
+void NoteRichTextEdit::transformTextToInternalLink(QTextCursor const& p_cursor) {
+  if (!m_previousHtmlSelection.isEmpty()) {
     return;
+  }
 
   f_textedit->viewport()->setCursor(QCursor(Qt::PointingHandCursor));
-  m_previousCursor = cursor;
+
+  m_previousCursor = p_cursor;
   QString qtClassHtml = m_previousCursor.selection().toHtml().split("<!--StartFragment-->").at(1).split("<!--EndFragment-->").at(0);
   m_previousHtmlSelection = qtClassHtml;
+
   QRegExp colorCSS("([ ;]color:#)([A-Fa-f0-9]{6})");
   QRegExp styleCSS("(style=\")");
   colorCSS.setMinimal(true);
   int colorIndex = colorCSS.indexIn(qtClassHtml);
-  if (colorIndex != -1)
+
+  if (colorIndex != -1) {
     qtClassHtml.replace(colorIndex+colorCSS.cap(1).length(), 6, "46A2DA");
-  else
+  } else {
     qtClassHtml.insert(styleCSS.indexIn(qtClassHtml)+styleCSS.cap(0).length(), "color:#46A2DA; ");
+  }
+
   m_previousCursor.removeSelectedText();
   m_previousCursor.insertHtml(qtClassHtml);
   m_previousCursor.setPosition(m_previousCursor.position()-1);
@@ -662,8 +685,8 @@ void NoteRichTextEdit::transformInternalLinkBack() {
   m_previousHtmlSelection.clear();
 }
 
-void NoteRichTextEdit::openSourceFromPosition(QTextCursor const& cursor) {
-  QTextCursor copyCursor = cursor;
+void NoteRichTextEdit::openSourceFromPosition(QTextCursor const& p_cursor) {
+  QTextCursor copyCursor = p_cursor;
   copyCursor.select(QTextCursor::WordUnderCursor);
   emit openSourceRequested(copyCursor.selectedText());
 }

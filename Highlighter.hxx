@@ -46,43 +46,40 @@
 
 class QTextDocument;
 
-class Highlighter : public QSyntaxHighlighter
-{
-    Q_OBJECT
+class Highlighter: public QSyntaxHighlighter {
+  Q_OBJECT
 
 public:
-    Highlighter(QTextDocument *parent = 0);
+  Highlighter(QTextDocument* parent = nullptr);
 
 protected:
-    void highlightBlock(const QString &text) Q_DECL_OVERRIDE;
-    void GetMemberVariables();
+  void highlightBlock(const QString& p_text) override;
 
 private:
-    struct HighlightingRule
-    {
-        QRegExp pattern;
-        QTextCharFormat format;
-    };
-    QVector<HighlightingRule> highlightingRules;
+  struct HighlightingRule {
+    QRegExp pattern;
+    QTextCharFormat format;
+  };
+  QVector<HighlightingRule> highlightingRules;
 
-    QRegExp commentStartExpression;
-    QRegExp commentEndExpression;
+  QRegExp commentStartExpression;
+  QRegExp commentEndExpression;
 
-    QTextCharFormat keywordFormat;
-    QTextCharFormat classFormat;
-    QTextCharFormat singleLineCommentFormat;
-    QTextCharFormat multiLineCommentFormat;
-    QTextCharFormat quotationFormat;
-    QTextCharFormat defineFormat;
-    QTextCharFormat includeFormat;
-    QTextCharFormat macroFormat;
-    QTextCharFormat qmacroFormat;
-    QTextCharFormat digitsFormat;
-    QTextCharFormat signalSlotMacroFormat;
-    QTextCharFormat labelFormat;
-    QTextCharFormat noLabelFormat;
-    QTextCharFormat semicolonFormat;
-    QTextCharFormat qAndDPointersFormat;
+  QTextCharFormat keywordFormat;
+  QTextCharFormat classFormat;
+  QTextCharFormat singleLineCommentFormat;
+  QTextCharFormat multiLineCommentFormat;
+  QTextCharFormat quotationFormat;
+  QTextCharFormat defineFormat;
+  QTextCharFormat includeFormat;
+  QTextCharFormat macroFormat;
+  QTextCharFormat qmacroFormat;
+  QTextCharFormat digitsFormat;
+  QTextCharFormat signalSlotMacroFormat;
+  QTextCharFormat labelFormat;
+  QTextCharFormat noLabelFormat;
+  QTextCharFormat semicolonFormat;
+  QTextCharFormat qAndDPointersFormat;
 };
 
 #endif // HIGHLIGHTER_H

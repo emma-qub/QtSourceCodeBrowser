@@ -22,14 +22,11 @@ class BrowseSourceWidget: public QWidget {
   Q_OBJECT
 
 public:
-  explicit BrowseSourceWidget(QWidget *parent = nullptr);
-
-public slots:
-  void expandAll();
+  explicit BrowseSourceWidget(QWidget* p_parent = nullptr);
 
 protected:
   void keyReleaseEvent(QKeyEvent* p_event) override;
-  void getNotesFileInfo(const QString& fileName);
+  void getNotesFileInfo(const QString& p_fileName);
   void saveNotesFromSource();
 
 protected slots:
@@ -44,11 +41,11 @@ protected slots:
   void openSourceCodeFromFileName(QString const& p_fileName);
 
 private:
-  QString getSourceContent(QString const& absoluteFilePath);
-  void openDocumentInEditor(QString const& fileName, QString const& absoluteFilePath);
+  QString getSourceContent(QString const& p_absoluteFilePath);
+  void openDocumentInEditor(QString const& p_fileName, QString const& p_absoluteFilePath);
   void initSourceSearchModel();
   void fillSourceModelFromDirectory(QString const& p_directoryName);
-  void openNotesFromSource(QString const& fileName);
+  void openNotesFromSource(QString const& p_fileName);
 
   CodeEditor* m_sourcesEditor;
   NoteRichTextEdit* m_notesTextEdit;

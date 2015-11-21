@@ -3,15 +3,13 @@
 
 #include <QStringListModel>
 
-class OpenDocumentsModel: public QStringListModel
-{
+class OpenDocumentsModel: public QStringListModel {
   Q_OBJECT
 
 public:
   explicit OpenDocumentsModel(QObject* p_parent = nullptr);
 
   bool insertDocument(QString const& p_fileName, QString const& p_absoluteFilePath);
-
   QModelIndex indexFromFile(QString const& p_fileName, QString const& p_absoluteFilePath);
 
 protected:
@@ -20,8 +18,8 @@ protected:
 
 private:
   bool documentAlreadyOpen(QString const& p_fileName, QString const& p_absoluteFilePath);
-  QMap<QModelIndex, QString> m_toolTipMap;
 
+  QMap<QModelIndex, QString> m_toolTipMap;
 };
 
 #endif // OPENDOCUMENTSMODEL_HXX

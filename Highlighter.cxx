@@ -42,9 +42,9 @@
 
 #include <QApplication>
 
-Highlighter::Highlighter(QTextDocument *parent)
-    : QSyntaxHighlighter(parent)
-{
+Highlighter::Highlighter(QTextDocument* parent):
+  QSyntaxHighlighter(parent) {
+
     HighlightingRule rule;
 
     qmacroFormat.setForeground(Qt::darkBlue);
@@ -97,10 +97,10 @@ Highlighter::Highlighter(QTextDocument *parent)
                     << "\\bvolatile\\b" << "\\bwchar_t\\b" << "\\bwhile\\b"
                     << "\\b__attribute__\\b" << "\\b__thread\\b" << "\\b__typeof__\\b";
 
-    foreach (const QString &pattern, keywordPatterns) {
-        rule.pattern = QRegExp(pattern);
-        rule.format = keywordFormat;
-        highlightingRules.append(rule);
+    for (QString const& pattern: keywordPatterns) {
+      rule.pattern = QRegExp(pattern);
+      rule.format = keywordFormat;
+      highlightingRules.append(rule);
     }
 
     digitsFormat.setForeground(Qt::darkBlue);
@@ -152,43 +152,36 @@ Highlighter::Highlighter(QTextDocument *parent)
 
     commentStartExpression = QRegExp("/\\*");
     commentEndExpression = QRegExp("\\*/");
-
-    GetMemberVariables();
 }
 
-void Highlighter::highlightBlock(const QString &text)
+void Highlighter::highlightBlock(const QString& p_text)
 {
-    foreach (const HighlightingRule &rule, highlightingRules) {
-        QRegExp expression(rule.pattern);
-        int index = expression.indexIn(text);
-        while (index >= 0) {
-            int length = expression.matchedLength();
-            setFormat(index, length, rule.format);
-            index = expression.indexIn(text, index + length);
-        }
+  for (HighlightingRule const& rule: highlightingRules) {
+    QRegExp expression(rule.pattern);
+    int index = expression.indexIn(p_text);
+    while (index >= 0) {
+      int length = expression.matchedLength();
+      setFormat(index, length, rule.format);
+      index = expression.indexIn(p_text, index + length);
     }
-    setCurrentBlockState(0);
+  }
+  setCurrentBlockState(0);
 
-    int startIndex = 0;
-    if (previousBlockState() != 1)
-        startIndex = commentStartExpression.indexIn(text);
+  int startIndex = 0;
+  if (previousBlockState() != 1) {
+    startIndex = commentStartExpression.indexIn(p_text);
+  }
 
-    while (startIndex >= 0) {
-        int endIndex = commentEndExpression.indexIn(text, startIndex);
-        int commentLength;
-        if (endIndex == -1) {
-            setCurrentBlockState(1);
-            commentLength = text.length() - startIndex;
-        } else {
-            commentLength = endIndex - startIndex
-                            + commentEndExpression.matchedLength();
-        }
-        setFormat(startIndex, commentLength, multiLineCommentFormat);
-        startIndex = commentStartExpression.indexIn(text, startIndex + commentLength);
+  while (startIndex >= 0) {
+    int endIndex = commentEndExpression.indexIn(p_text, startIndex);
+    int commentLength;
+    if (endIndex == -1) {
+      setCurrentBlockState(1);
+      commentLength = p_text.length() - startIndex;
+    } else {
+      commentLength = endIndex - startIndex + commentEndExpression.matchedLength();
     }
-}
-
-void Highlighter::GetMemberVariables()
-{
-
+    setFormat(startIndex, commentLength, multiLineCommentFormat);
+    startIndex = commentStartExpression.indexIn(p_text, startIndex + commentLength);
+  }
 }

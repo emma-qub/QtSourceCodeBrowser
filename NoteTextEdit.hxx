@@ -9,16 +9,16 @@ class NoteTextEdit: public QTextEdit {
   Q_OBJECT
 
 public:
-  NoteTextEdit(QWidget *parent);
-  void dropImage(const QImage& image, const QString& format);
+  NoteTextEdit(QWidget* p_parent = nullptr);
+  void dropImage(QImage const& p_image, QString const& p_format);
 
 protected:
-  bool canInsertFromMimeData(const QMimeData *source) const override;
-  void insertFromMimeData(const QMimeData *source) override;
+  bool canInsertFromMimeData(QMimeData const* p_source) const override;
+  void insertFromMimeData(QMimeData const* p_source) override;
   QMimeData* createMimeDataFromSelection() const override;
-  void mouseMoveEvent(QMouseEvent* event) override;
-  void mousePressEvent(QMouseEvent* event) override;
-  void keyReleaseEvent(QKeyEvent* event) override;
+  void mouseMoveEvent(QMouseEvent* p_event) override;
+  void mousePressEvent(QMouseEvent* p_event) override;
+  void keyReleaseEvent(QKeyEvent* p_event) override;
 
 signals:
   void transformToLinkRequested(QTextCursor);

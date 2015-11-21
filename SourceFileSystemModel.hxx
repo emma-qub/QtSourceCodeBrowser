@@ -3,7 +3,6 @@
 
 #include <QFileSystemModel>
 
-class SourceFileSystemModelData;
 
 class SourceFileSystemModel: public QFileSystemModel {
   Q_OBJECT
@@ -12,7 +11,7 @@ public:
   SourceFileSystemModel(QObject* p_parent = nullptr);
 
 protected:
-  QVariant data(const QModelIndex& index, int role) const override;
+  QVariant data(const QModelIndex& p_index, int p_role) const override;
 
 private:
   QStringList m_emptyDirectories;
