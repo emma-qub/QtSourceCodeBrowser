@@ -36,11 +36,17 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   m_notesTextEdit = new NoteRichTextEdit(this);
   connect(m_notesTextEdit, SIGNAL(openSourceRequested(QString)), this, SLOT(openSourceCodeFromFileName(QString)));
 
-  // Edit Notes ON
-  QAction* editNotesOnAction = new QAction(this);
-  editNotesOnAction->setShortcut(QKeySequence("CTRL+E,3"));
-  addAction(editNotesOnAction);
-  connect(editNotesOnAction, SIGNAL(triggered()), m_notesTextEdit, SLOT(show()));
+  // Edit Notes ON horizontal
+  QAction* editNotesOnHorizontalAction = new QAction(this);
+  editNotesOnHorizontalAction->setShortcut(QKeySequence("CTRL+E,3"));
+  addAction(editNotesOnHorizontalAction);
+  connect(editNotesOnHorizontalAction, SIGNAL(triggered()), this, SLOT(showHorizontal()));
+
+  // Edit Notes ON vertical
+  QAction* editNotesOnVerticalAction = new QAction(this);
+  editNotesOnVerticalAction->setShortcut(QKeySequence("CTRL+E,2"));
+  addAction(editNotesOnVerticalAction);
+  connect(editNotesOnVerticalAction, SIGNAL(triggered()), this, SLOT(showVertical()));
 
   // Edit Notes OFF
   QAction* editNotesOffAction = new QAction(this);
