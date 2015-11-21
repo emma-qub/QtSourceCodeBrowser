@@ -15,6 +15,7 @@ NoteTextEdit::NoteTextEdit(QWidget *parent):
   QTextEdit(parent),
   m_currentCursor() {
 
+  setLineWrapMode(QTextEdit::NoWrap);
   setMouseTracking(true);
 }
 
