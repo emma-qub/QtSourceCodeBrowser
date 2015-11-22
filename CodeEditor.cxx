@@ -146,14 +146,12 @@ void CodeEditor::openSourceCode(const QString& p_className, const QString& p_con
     if (match.hasMatch()) {
       ind = match.capturedStart()+1;
       if (!methodIsInComment(ind)) {
-        //cursor.setPosition(ind-1);
-        //cursor.setVerticalMovementX(1);
-        m_methodsPerLineMap.insert(ind/*cursor.position()*/, match.captured(0).replace(0, 1, "").split(QRegularExpression("\\n{")).first().split(QRegularExpression("\\n\\s*:")).first().split(QRegularExpression("\\n\\s*")).join(" "));
+        m_methodsPerLineMap.insert(ind, match.captured(0).replace(0, 1, "").split(QRegularExpression("\\n{")).first().split(QRegularExpression("\\n\\s*:")).first().split(QRegularExpression("\\n\\s*")).join(" "));
       }
     }
   }
 
-  for(auto const& s:m_methodsPerLineMap)qDebug()<<s<<"\n";
+  //for(auto const& s:m_methodsPerLineMap)qDebug()<<s<<"\n";
 
   emit methodListReady(m_methodsPerLineMap);
 }
