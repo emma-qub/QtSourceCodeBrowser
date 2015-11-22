@@ -55,11 +55,18 @@ class CodeEditor: public QPlainTextEdit {
   Q_OBJECT
 
 public:
+  enum FileType {
+    eCpp,
+    eH,
+    ePrivateH,
+    eOtherFile
+  };
+
   CodeEditor(QWidget* p_parent = nullptr);
 
   void lineNumberAreaPaintEvent(QPaintEvent* p_event);
   int lineNumberAreaWidth();
-  void openSourceCode(QString const& p_className, QString const& p_content);
+  void openSourceCode(QString const& p_className, QString const& p_content, FileType p_fileType);
 
 protected:
   void resizeEvent(QResizeEvent* p_event) override;
@@ -74,9 +81,11 @@ signals:
 
 private:
   void setPlainText(const QString& p_text);
+  bool methodIsInComment(int p_methodStartIndex) const;
 
   QWidget* m_lineNumberArea;
   QMap<int, QString> m_methodsPerLineMap;
+  QVector<QPair<int, int>> m_commentsVector;
 };
 
 

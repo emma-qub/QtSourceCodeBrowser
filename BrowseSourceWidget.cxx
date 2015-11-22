@@ -164,8 +164,9 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   setContextMenuPolicy(Qt::CustomContextMenu);
 
   /////////////////////////////
-  openNotesFromSource("qdialog.cpp");
-  m_notesTextEdit->show();
+  openSourceCodeFromFileName("qabstractitemmodel.cpp");
+  //openNotesFromSource("qdialog.cpp");
+  //m_notesTextEdit->show();
 }
 
 void BrowseSourceWidget::keyReleaseEvent(QKeyEvent* p_event) {
@@ -326,8 +327,20 @@ void BrowseSourceWidget::openDocumentInEditor(QString const& p_fileName, QString
     qDebug() << "404 Not Found" << "The file\n"+p_absoluteFilePath+"\ndoes not exist on this computer.";
     return;
   }
+
+  CodeEditor::FileType fileType;
+  if (p_fileName.endsWith("_p.h")) {
+    fileType = CodeEditor::ePrivateH;
+  } else if (p_fileName.endsWith(".h")) {
+    fileType = CodeEditor::eH;
+  } else if (p_fileName.endsWith(".cpp")) {
+    fileType = CodeEditor::eCpp;
+  } else {
+    fileType = CodeEditor::eOtherFile;
+  }
+
   m_openDocumentsModel->insertDocument(p_fileName, p_absoluteFilePath);
-  m_sourcesEditor->openSourceCode(p_fileName.split(".").first(), getSourceContent(p_absoluteFilePath));
+  m_sourcesEditor->openSourceCode(p_fileName.split(".").first(), getSourceContent(p_absoluteFilePath), fileType);
   QModelIndex openIndex = m_openDocumentsProxyModel->mapFromSource(m_openDocumentsModel->indexFromFile(p_fileName, p_absoluteFilePath));
   m_openDocumentsView->setCurrentIndex(openIndex);
 

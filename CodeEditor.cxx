@@ -42,18 +42,22 @@
 
 #include <QPainter>
 #include <QTextBlock>
+#include <QPair>
+#include <QRegularExpression>
 
 #include <QDebug>
 
 CodeEditor::CodeEditor(QWidget* p_parent):
   QPlainTextEdit(p_parent),
   m_lineNumberArea(new LineNumberArea(this)),
-  m_methodsPerLineMap() {
+  m_methodsPerLineMap(),
+  m_commentsVector() {
 
   connect(this, SIGNAL(blockCountChanged(int)), this, SLOT(updateLineNumberAreaWidth(int)));
   connect(this, SIGNAL(updateRequest(QRect,int)), this, SLOT(updateLineNumberArea(QRect,int)));
   connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(highlightCurrentLine()));
 
+  setLineWrapMode(QPlainTextEdit::NoWrap);
   updateLineNumberAreaWidth(0);
   highlightCurrentLine();
 }
@@ -88,24 +92,68 @@ void CodeEditor::updateLineNumberArea(QRect const& p_rect, int p_dy) {
   }
 }
 
-void CodeEditor::setPlainText(const QString& p_text)
-{
-   QPlainTextEdit::setPlainText(p_text);
-}
-
-void CodeEditor::openSourceCode(const QString& p_className, const QString& p_content) {
+void CodeEditor::openSourceCode(const QString& p_className, const QString& p_content, FileType p_fileType) {
   setPlainText(p_content);
   m_methodsPerLineMap.clear();
+  m_commentsVector.clear();
 
   QString content = toPlainText();
-  QRegExp methodName("(([A-Za-z_&:]+\\s+\\**\\s*)?)?"+p_className+"[A-Za-z_]*::[A-Za-z_~]+\\([A-Za-z\\s_*&:,]*\\)(\\s+const)?");
-  methodName.setCaseSensitivity(Qt::CaseInsensitive);
 
-  int i = -1;
-  while ((i = methodName.indexIn(content, i+1)) >= 0) {
-    m_methodsPerLineMap.insert(i, methodName.cap(0).split("\n").last());
-    i += methodName.cap(0).length();
+  // Fill comments map
+  QRegExp commentStartExpression("/\\*");
+  QRegExp commentEndExpression("\\*/");
+
+  int startIndex = commentStartExpression.indexIn(content);
+
+  while (startIndex >= 0) {
+    int endIndex = commentEndExpression.indexIn(content, startIndex);
+    QPair<int, int> currentCommentLines(startIndex, endIndex);
+    if (endIndex == -1) {
+      currentCommentLines.second = content.length();
+    }
+    m_commentsVector.append(currentCommentLines);
+    startIndex = commentStartExpression.indexIn(content, endIndex);
   }
+
+  // Fill methods map
+  QRegularExpression methodName;
+  methodName.setPatternOptions(QRegularExpression::DotMatchesEverythingOption | QRegularExpression::InvertedGreedinessOption);
+
+  switch(p_fileType) {
+  case eCpp: {
+    //methodName.setPattern("\\n((const\\s+)?\\w+(::\\w+)?\\s*(\\*|&)*\\s*)?\\w+(::~?\\w+)?(\\s*operator\\s*.+\\s*)?\\(((\\s*const\\s+)?\\w+(::\\w+)?\\s*(\\*|&)*\\s*\\w*)?(\\s*,\\s*(const\\s+)?\\w+(::\\w+)?\\s*(\\*|&)?\\s*\\w*)*\\s*\\)[\\s\\w]*");
+    methodName.setPattern("\\n(\\w[\\w\\<\\*\\&\\,\\>:\\s]*)\\w+(::~?\\w+|::\\w+(::\\w+)*|\\s*operator\\s*..?\\s*)\\(.*\\)[\\n\\w\\s\\(\\):,]*\\n{");
+    break;
+  }
+  case ePrivateH:
+  case eH: {
+    methodName.setPattern("(\\w+(::\\w+)?\\s*(\\*|&)*\\s*)?~?\\w+\\(((\\s*const\\s+)?\\w+(::\\w+)?\\s*(\\*|&)*\\s*\\w*(\\s*=\\s*(\\w+(::\\w+)?|\\d+|(\\w+\\s*\\(\\s*\\))))?)?(\\s*,\\s*(\\s*const\\s+)?\\w+(::\\w+)?\\s*(\\*|&)?\\s*\\w*(\\s*=\\s*(\\w+(::\\w+)?|\\d+|(\\w+\\s*\\(\\s*\\))))?)*\\s*\\)[\\s\\w]*((\\s*=\\s*0\\s*)?;|\\s*\\:?\\s*\\{[\\s\\w;]*\\})");
+    //methodName.setPattern("\n.*\\(.*\\n*\\).*;");
+    break;
+  }
+  case eOtherFile:
+  default: {
+    break;
+  }
+  }
+
+  //QTextCursor cursor = textCursor();
+  int ind = -1;
+  methodName.setPatternOptions(QRegularExpression::DotMatchesEverythingOption | QRegularExpression::InvertedGreedinessOption);
+  QRegularExpressionMatchIterator it = methodName.globalMatch(content);
+  while (it.hasNext()) {
+    QRegularExpressionMatch match = it.next();
+    if (match.hasMatch()) {
+      ind = match.capturedStart()+1;
+      if (!methodIsInComment(ind)) {
+        //cursor.setPosition(ind-1);
+        //cursor.setVerticalMovementX(1);
+        m_methodsPerLineMap.insert(ind/*cursor.position()*/, match.captured(0).replace(0, 1, "").split(QRegularExpression("\\n{")).first().split(QRegularExpression("\\n\\s*:")).first().split(QRegularExpression("\\n\\s*")).join(" "));
+      }
+    }
+  }
+
+  for(auto const& s:m_methodsPerLineMap)qDebug()<<s<<"\n";
 
   emit methodListReady(m_methodsPerLineMap);
 }
@@ -156,4 +204,20 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent* p_event) {
     bottom = top + (int) blockBoundingRect(block).height();
     ++blockNumber;
   }
+}
+
+void CodeEditor::setPlainText(const QString& p_text) {
+  QPlainTextEdit::setPlainText(p_text);
+}
+
+bool CodeEditor::methodIsInComment(int p_methodStartIndex) const {
+  for (auto indexes: m_commentsVector) {
+    if (p_methodStartIndex < indexes.first) {
+      return false;
+    } else if (indexes.first <= p_methodStartIndex && p_methodStartIndex <= indexes.second) {
+      return true;
+    }
+  }
+
+  return false;
 }
