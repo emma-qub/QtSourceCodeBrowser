@@ -6,29 +6,39 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>669</width>
-    <height>312</height>
+    <width>675</width>
+    <height>344</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string notr="true"/>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1">
    <property name="spacing">
-    <number>1</number>
+    <number>0</number>
    </property>
    <property name="leftMargin">
-    <number>1</number>
+    <number>0</number>
    </property>
    <property name="topMargin">
-    <number>1</number>
+    <number>0</number>
    </property>
    <property name="rightMargin">
-    <number>1</number>
+    <number>0</number>
    </property>
    <property name="bottomMargin">
-    <number>1</number>
+    <number>0</number>
    </property>
+   <item>
+    <widget class="QPushButton" name="f_edit_button">
+     <property name="text">
+      <string/>
+     </property>
+     <property name="checkable">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
    <item>
     <widget class="QWidget" name="f_toolbar" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout">
@@ -47,6 +57,13 @@
       <property name="bottomMargin">
        <number>0</number>
       </property>
+      <item>
+       <widget class="QToolButton" name="f_save">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QComboBox" name="f_paragraph">
         <property name="focusPolicy">
@@ -109,75 +126,6 @@
         </property>
         <property name="icon">
          <iconset theme="edit-redo">
-          <normaloff>.</normaloff>.</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>16</width>
-          <height>16</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QToolButton" name="f_cut">
-        <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
-        </property>
-        <property name="toolTip">
-         <string>Cut (CTRL+X)</string>
-        </property>
-        <property name="text">
-         <string>Cut</string>
-        </property>
-        <property name="icon">
-         <iconset theme="edit-cut">
-          <normaloff>.</normaloff>.</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>16</width>
-          <height>16</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QToolButton" name="f_copy">
-        <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
-        </property>
-        <property name="toolTip">
-         <string>Copy (CTRL+C)</string>
-        </property>
-        <property name="text">
-         <string>Copy</string>
-        </property>
-        <property name="icon">
-         <iconset theme="edit-copy">
-          <normaloff>.</normaloff>.</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>16</width>
-          <height>16</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QToolButton" name="f_paste">
-        <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
-        </property>
-        <property name="toolTip">
-         <string>Paste (CTRL+V)</string>
-        </property>
-        <property name="text">
-         <string>Paste</string>
-        </property>
-        <property name="icon">
-         <iconset theme="edit-paste">
           <normaloff>.</normaloff>.</iconset>
         </property>
         <property name="iconSize">
@@ -545,9 +493,6 @@
      <zorder>line_4</zorder>
      <zorder>f_undo</zorder>
      <zorder>f_redo</zorder>
-     <zorder>f_cut</zorder>
-     <zorder>f_copy</zorder>
-     <zorder>f_paste</zorder>
      <zorder>line</zorder>
      <zorder>f_link</zorder>
      <zorder>line_3</zorder>
@@ -570,6 +515,7 @@
      <zorder>line_7</zorder>
      <zorder>f_image</zorder>
      <zorder>line_8</zorder>
+     <zorder>f_save</zorder>
     </widget>
    </item>
    <item>
@@ -578,7 +524,16 @@
       <set>QTextEdit::AutoNone</set>
      </property>
      <property name="tabChangesFocus">
+      <bool>false</bool>
+     </property>
+     <property name="lineWrapMode">
+      <enum>QTextEdit::NoWrap</enum>
+     </property>
+     <property name="readOnly">
       <bool>true</bool>
+     </property>
+     <property name="tabStopWidth">
+      <number>40</number>
      </property>
     </widget>
    </item>

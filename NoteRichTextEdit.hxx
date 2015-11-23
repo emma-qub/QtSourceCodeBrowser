@@ -39,6 +39,8 @@ public:
   QTextDocument* document() const;
   QTextCursor textCursor() const;
   void setTextCursor(const QTextCursor& p_cursor);
+  void turnEditOff();
+  bool hasModificationsNotSaved() const { return f_textedit->hasModificationsNotSaved(); }
 
 public slots:
   void setText(const QString& p_text);
@@ -61,7 +63,6 @@ protected slots:
   void listOrdered(bool p_checked);
   void slotCurrentCharFormatChanged(const QTextCharFormat& p_format);
   void slotCursorPositionChanged();
-  void slotClipboardDataChanged();
   void increaseIndentation();
   void decreaseIndentation();
   void insertImage();
@@ -70,9 +71,16 @@ protected slots:
   void transformTextToInternalLink(QTextCursor const& p_cursor);
   void transformInternalLinkBack();
   void openSourceFromPosition(const QTextCursor& p_cursor);
+  void editOn();
+  void editOff(bool p_requestSave = true);
+  void setModificationsNotSaved(bool p_value) { f_textedit->setModificationsNotSaved(p_value); }
+  void notesHaveBeenSaved() { setModificationsNotSaved(false); }
 
 signals:
   void openSourceRequested(QString);
+  void saveNotesRequested();
+  void modificationsNotSaved(bool);
+  void notesEditOff(bool);
 
 protected:
   void mergeFormatOnWordOrSelection(const QTextCharFormat& p_format);

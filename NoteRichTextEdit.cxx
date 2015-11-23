@@ -47,10 +47,11 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
 
   setupUi(this);
   m_lastBlockList = 0;
-  f_textedit->setTabStopWidth(40);
 
   connect(f_textedit, SIGNAL(currentCharFormatChanged(QTextCharFormat)), this, SLOT(slotCurrentCharFormatChanged(QTextCharFormat)));
   connect(f_textedit, SIGNAL(cursorPositionChanged()), this, SLOT(slotCursorPositionChanged()));
+  connect(f_textedit, SIGNAL(modificationsNotSaved(bool)), this, SIGNAL(modificationsNotSaved(bool)));
+  connect(f_textedit, SIGNAL(editNotesRequested()), f_edit_button, SLOT(click()));
 
   m_fontsize_h1 = 18;
   m_fontsize_h2 = 16;
@@ -59,6 +60,23 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
 
   fontChanged(f_textedit->font());
   bgColorChanged(f_textedit->textColor());
+
+  // Edit button
+  f_edit_button->setFixedSize(22, 24);
+  f_edit_button->setIcon(QIcon("../QtSourceCodeBrowser/icons/edit.png"));
+  connect(f_edit_button, SIGNAL(clicked()), this, SLOT(editOn()));
+
+  // Save button
+  f_save->setFixedSize(22, 24);
+  f_save->setIcon(QIcon("../QtSourceCodeBrowser/icons/save.png"));
+  f_save->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_S));
+  connect(f_save, SIGNAL(clicked()), this, SLOT(editOff()));
+
+  QAction* saveNotesAction = new QAction(this);
+  saveNotesAction->setShortcut(QKeySequence::Save);
+  connect(saveNotesAction, SIGNAL(triggered()), this, SIGNAL(saveNotesRequested()));
+  connect(saveNotesAction, SIGNAL(triggered()), this, SLOT(notesHaveBeenSaved()));
+  f_toolbar->addAction(saveNotesAction);
 
   // paragraph formatting
   m_paragraphItems
@@ -83,25 +101,6 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
 
   connect(f_undo, SIGNAL(clicked()), f_textedit, SLOT(undo()));
   connect(f_redo, SIGNAL(clicked()), f_textedit, SLOT(redo()));
-
-  // cut, copy & paste
-  f_cut->setShortcut(QKeySequence::Cut);
-  f_copy->setShortcut(QKeySequence::Copy);
-  f_paste->setShortcut(QKeySequence::Paste);
-
-  f_cut->setEnabled(false);
-  f_copy->setEnabled(false);
-
-  connect(f_cut, SIGNAL(clicked()), f_textedit, SLOT(cut()));
-  connect(f_copy, SIGNAL(clicked()), f_textedit, SLOT(copy()));
-  connect(f_paste, SIGNAL(clicked()), f_textedit, SLOT(paste()));
-
-  connect(f_textedit, SIGNAL(copyAvailable(bool)), f_cut, SLOT(setEnabled(bool)));
-  connect(f_textedit, SIGNAL(copyAvailable(bool)), f_copy, SLOT(setEnabled(bool)));
-
-#ifndef QT_NO_CLIPBOARD
-  connect(QApplication::clipboard(), SIGNAL(dataChanged()), this, SLOT(slotClipboardDataChanged()));
-#endif
 
   // link
   f_link->setShortcut(Qt::CTRL + Qt::Key_L);
@@ -198,6 +197,9 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
   connect(f_textedit, SIGNAL(transformLinkBackRequested()), this, SLOT(transformInternalLinkBack()));
   connect(f_textedit, SIGNAL(openSourceRequested(QTextCursor)), this, SLOT(openSourceFromPosition(QTextCursor)));
 
+  // Hide tool bar
+  f_toolbar->hide();
+
   // Mouse tracking
   setMouseTracking(true);
 }
@@ -226,6 +228,11 @@ QTextCursor NoteRichTextEdit::textCursor() const {
 
 void NoteRichTextEdit::setTextCursor(const QTextCursor& p_cursor) {
   f_textedit->setTextCursor(p_cursor);
+}
+
+void NoteRichTextEdit::turnEditOff()
+{
+  editOff(false);
 }
 
 void NoteRichTextEdit::textSource() {
@@ -562,13 +569,6 @@ void NoteRichTextEdit::slotCurrentCharFormatChanged(const QTextCharFormat &p_for
   f_code->setChecked(p_format.fontFamily() == "mono");
 }
 
-void NoteRichTextEdit::slotClipboardDataChanged() {
-#ifndef QT_NO_CLIPBOARD
-  if (const QMimeData* md = QApplication::clipboard()->mimeData())
-    f_paste->setEnabled(md->hasText());
-#endif
-}
-
 void NoteRichTextEdit::increaseIndentation() {
   indent(+1);
 }
@@ -695,4 +695,28 @@ void NoteRichTextEdit::openSourceFromPosition(QTextCursor const& p_cursor) {
   QTextCursor copyCursor = p_cursor;
   copyCursor.select(QTextCursor::WordUnderCursor);
   emit openSourceRequested(copyCursor.selectedText());
+}
+
+void NoteRichTextEdit::editOn()
+{
+  f_edit_button->hide();
+  f_toolbar->show();
+  f_textedit->setReadOnly(false);
+  f_textedit->viewport()->setCursor(Qt::IBeamCursor);
+  f_textedit->setStyleSheet("background-image: url(\"../QtSourceCodeBrowser/images/draft.png\");");
+}
+
+void NoteRichTextEdit::editOff(bool p_requestSave)
+{
+  f_edit_button->show();
+  f_toolbar->hide();
+  f_textedit->hasNoModifications();
+  f_textedit->setReadOnly(true);
+  f_textedit->viewport()->setCursor(Qt::ArrowCursor);
+  f_textedit->setStyleSheet("background-image: none;");
+  if (p_requestSave) {
+    emit saveNotesRequested();
+  }
+
+  emit notesEditOff(false);
 }

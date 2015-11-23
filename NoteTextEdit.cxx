@@ -12,18 +12,20 @@
 
 
 NoteTextEdit::NoteTextEdit(QWidget* p_parent):
-  QTextEdit(p_parent),
-  m_currentCursor() {
+  QTextBrowser(p_parent),
+  m_currentCursor(),
+  m_hasModificationsNotSaved(false) {
 
-  setLineWrapMode(QTextEdit::NoWrap);
   setMouseTracking(true);
-}
+  setOpenExternalLinks(true);
+  setUndoRedoEnabled(true);
 
+  connect(this, SIGNAL(undoAvailable(bool)), this, SLOT(setModificationsNotSaved(bool)));
+}
 
 bool NoteTextEdit::canInsertFromMimeData(const QMimeData* p_source) const {
   return p_source->hasImage() || QTextEdit::canInsertFromMimeData(p_source);
 }
-
 
 void NoteTextEdit::insertFromMimeData(const QMimeData* p_source) {
   if (p_source->hasImage()) {
@@ -52,11 +54,9 @@ void NoteTextEdit::insertFromMimeData(const QMimeData* p_source) {
   QTextEdit::insertFromMimeData(p_source);
 }
 
-
 QMimeData* NoteTextEdit::createMimeDataFromSelection() const {
   return QTextEdit::createMimeDataFromSelection();
 }
-
 
 void NoteTextEdit::dropImage(QImage const& p_image, QString const& p_format) {
   QByteArray bytes;
@@ -85,10 +85,10 @@ void NoteTextEdit::dropImage(QImage const& p_image, QString const& p_format) {
 }
 
 void NoteTextEdit::mouseMoveEvent(QMouseEvent* p_event) {
-  if (p_event->modifiers() == Qt::CTRL) {
-    QTextCursor cursor = cursorForPosition(p_event->pos());
-    cursor.select(QTextCursor::WordUnderCursor);
+  QTextCursor cursor = cursorForPosition(p_event->pos());
+  cursor.select(QTextCursor::WordUnderCursor);
 
+  if (p_event->modifiers() == Qt::CTRL) {
     if (QRegExp("^Q.+").exactMatch(cursor.selectedText())) {
       m_currentCursor = cursor;
       emit transformToLinkRequested(m_currentCursor);
@@ -97,9 +97,11 @@ void NoteTextEdit::mouseMoveEvent(QMouseEvent* p_event) {
       m_currentCursor = QTextCursor();
     }
   }
-  else if (m_currentCursor != QTextCursor()) {
-    emit transformLinkBackRequested();
-    m_currentCursor = QTextCursor();
+  else {
+    if (m_currentCursor != QTextCursor()) {
+      emit transformLinkBackRequested();
+      m_currentCursor = QTextCursor();
+    }
   }
 
   QTextEdit::mouseMoveEvent(p_event);
@@ -124,4 +126,16 @@ void NoteTextEdit::keyReleaseEvent(QKeyEvent* p_event)
   }
 
   QTextEdit::keyReleaseEvent(p_event);
+}
+
+void NoteTextEdit::mouseDoubleClickEvent(QMouseEvent* p_event)
+{
+  Q_UNUSED(p_event);
+  emit editNotesRequested();
+}
+
+void NoteTextEdit::setModificationsNotSaved(bool p_value)
+{
+  m_hasModificationsNotSaved = p_value;
+  emit modificationsNotSaved(p_value);
 }

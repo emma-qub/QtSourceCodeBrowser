@@ -47,6 +47,9 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   // Note Text Edit
   m_notesTextEdit = new NoteRichTextEdit(this);
   connect(m_notesTextEdit, SIGNAL(openSourceRequested(QString)), this, SLOT(openSourceCodeFromFileName(QString)));
+  connect(m_notesTextEdit, SIGNAL(saveNotesRequested()), this, SLOT(saveNotesFromSource()));
+  connect(m_notesTextEdit, SIGNAL(modificationsNotSaved(bool)), this, SLOT(addOrRemoveStarToOpenDocument(bool)));
+  connect(m_notesTextEdit, SIGNAL(notesEditOff(bool)), this, SLOT(addOrRemoveStarToOpenDocument(bool)));
 
   // Edit Notes ON horizontal
   QAction* editNotesOnHorizontalAction = new QAction(this);
@@ -164,9 +167,9 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   setContextMenuPolicy(Qt::CustomContextMenu);
 
   /////////////////////////////
-  openSourceCodeFromFileName("qabstractitemmodel.cpp");
-  //openNotesFromSource("qdialog.cpp");
-  //m_notesTextEdit->show();
+  openSourceCodeFromFileName("qmap.cpp");
+  openNotesFromSource("qmap.cpp");
+  m_notesTextEdit->show();
 }
 
 void BrowseSourceWidget::keyReleaseEvent(QKeyEvent* p_event) {
@@ -302,6 +305,18 @@ void BrowseSourceWidget::goToLine(int p_index)
     m_sourcesEditor->moveCursor(QTextCursor::Down);
 }
 
+void BrowseSourceWidget::addOrRemoveStarToOpenDocument(bool p_add)
+{
+  QModelIndex currentOpenDocumentIndex = m_openDocumentsProxyModel->mapToSource(m_openDocumentsView->currentIndex());
+  QString newCurrentOpenDocumentName = m_openDocumentsModel->data(currentOpenDocumentIndex).toString();
+  if (p_add && !newCurrentOpenDocumentName.endsWith("*")) {
+    newCurrentOpenDocumentName += "*";
+  } else if (!p_add && newCurrentOpenDocumentName.endsWith("*")) {
+    newCurrentOpenDocumentName.remove(newCurrentOpenDocumentName.size()-1, 1);
+  }
+  m_openDocumentsModel->setData(currentOpenDocumentIndex, newCurrentOpenDocumentName);
+}
+
 void BrowseSourceWidget::destroyContextualMenu(QObject* p_object) {
   Q_UNUSED(p_object)
   qDeleteAll(m_actionSourcesMap.keys());
@@ -322,6 +337,30 @@ void BrowseSourceWidget::openSourceCodeFromOpenDocuments(QModelIndex const& p_in
 }
 
 void BrowseSourceWidget::openDocumentInEditor(QString const& p_fileName, QString const& p_absoluteFilePath) {
+  if (m_notesTextEdit->hasModificationsNotSaved()) {
+    QMessageBox msgBox;
+    msgBox.setText("The document has been modified.");
+    msgBox.setInformativeText("Do you want to save your changes?");
+    msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::Save);
+    int ret = msgBox.exec();
+    switch (ret) {
+    case QMessageBox::Save: {
+      saveNotesFromSource();
+      break;
+    }
+    case QMessageBox::Cancel: {
+      return;
+    }
+    case QMessageBox::Discard:
+    default: {
+      break;
+    }
+    }
+  }
+
+  m_notesTextEdit->turnEditOff();
+
   QFile sourceFile(p_absoluteFilePath);
   if (!sourceFile.exists()) {
     qDebug() << "404 Not Found" << "The file\n"+p_absoluteFilePath+"\ndoes not exist on this computer.";
@@ -344,7 +383,6 @@ void BrowseSourceWidget::openDocumentInEditor(QString const& p_fileName, QString
   QModelIndex openIndex = m_openDocumentsProxyModel->mapFromSource(m_openDocumentsModel->indexFromFile(p_fileName, p_absoluteFilePath));
   m_openDocumentsView->setCurrentIndex(openIndex);
 
-  saveNotesFromSource();
   openNotesFromSource(p_fileName);
 }
 
@@ -403,6 +441,8 @@ void BrowseSourceWidget::saveNotesFromSource()
   in << m_notesTextEdit->toHtml();
 
   noteFile.close();
+
+  addOrRemoveStarToOpenDocument(false);
 }
 
 void BrowseSourceWidget::getNotesFileInfo(QString const& p_fileName) {

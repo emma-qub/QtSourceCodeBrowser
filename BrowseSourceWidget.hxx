@@ -27,9 +27,9 @@ public:
 protected:
   void keyReleaseEvent(QKeyEvent* p_event) override;
   void getNotesFileInfo(const QString& p_fileName);
-  void saveNotesFromSource();
 
 protected slots:
+  void saveNotesFromSource();
   void searchFiles(QString const& p_fileName);
   void openSourceCode(QModelIndex const& p_index);
   void destroyContextualMenu(QObject* p_object);
@@ -41,6 +41,7 @@ protected slots:
   void openSourceCodeFromFileName(QString const& p_fileName);
   void fillMethodsComboBox(QMap<int, QString> const& p_methodsAndIndex);
   void goToLine(int p_index);
+  void addOrRemoveStarToOpenDocument(bool p_add);
 
 private:
   QString getSourceContent(QString const& p_absoluteFilePath);

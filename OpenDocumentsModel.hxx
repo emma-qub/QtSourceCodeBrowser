@@ -12,9 +12,8 @@ public:
   bool insertDocument(QString const& p_fileName, QString const& p_absoluteFilePath);
   QModelIndex indexFromFile(QString const& p_fileName, QString const& p_absoluteFilePath);
 
-protected:
-  bool setData(QModelIndex const& p_index, QVariant const& p_value, int p_role) override;
-  QVariant data(QModelIndex const& p_index, int p_role) const override;
+  bool setData(QModelIndex const& p_index, QVariant const& p_value, int p_role = Qt::DisplayRole) override;
+  QVariant data(QModelIndex const& p_index, int p_role = Qt::EditRole) const override;
 
 private:
   bool documentAlreadyOpen(QString const& p_fileName, QString const& p_absoluteFilePath);
