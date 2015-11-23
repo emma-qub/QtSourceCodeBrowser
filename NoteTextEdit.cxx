@@ -85,6 +85,10 @@ void NoteTextEdit::dropImage(QImage const& p_image, QString const& p_format) {
 }
 
 void NoteTextEdit::mouseMoveEvent(QMouseEvent* p_event) {
+  if (!isReadOnly()) {
+    return;
+  }
+
   QTextCursor cursor = cursorForPosition(p_event->pos());
   cursor.select(QTextCursor::WordUnderCursor);
 

@@ -699,19 +699,21 @@ void NoteRichTextEdit::openSourceFromPosition(QTextCursor const& p_cursor) {
 
 void NoteRichTextEdit::editOn()
 {
+  f_textedit->setReadOnly(false);
+  f_textedit->setUndoRedoEnabled(true);
   f_edit_button->hide();
   f_toolbar->show();
-  f_textedit->setReadOnly(false);
   f_textedit->viewport()->setCursor(Qt::IBeamCursor);
   f_textedit->setStyleSheet("background-image: url(\"../QtSourceCodeBrowser/images/draft.png\");");
 }
 
 void NoteRichTextEdit::editOff(bool p_requestSave)
 {
+  f_textedit->setReadOnly(true);
+  f_textedit->setUndoRedoEnabled(false);
   f_edit_button->show();
   f_toolbar->hide();
   f_textedit->hasNoModifications();
-  f_textedit->setReadOnly(true);
   f_textedit->viewport()->setCursor(Qt::ArrowCursor);
   f_textedit->setStyleSheet("background-image: none;");
   if (p_requestSave) {
