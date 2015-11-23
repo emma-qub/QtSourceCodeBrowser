@@ -262,7 +262,7 @@ void BrowseSourceWidget::showVertical() {
 }
 
 void BrowseSourceWidget::openSourceCodeFromFileName(const QString& p_fileName) {
-  m_searchLineEdit->setText("^"+p_fileName.toLower());
+  m_searchLineEdit->setText("^"+p_fileName.toLower()+"(_p)?\\.");
   QMenu contextMenu(tr("Context menu"), this);
   contextMenu.setStyleSheet("QMenu { menu-scrollable: 1; }");
 
