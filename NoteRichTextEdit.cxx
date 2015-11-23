@@ -62,7 +62,7 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
   bgColorChanged(f_textedit->textColor());
 
   // Edit button
-  f_edit_button->setFixedSize(22, 24);
+  f_edit_button->setFixedSize(27, 27);
   f_edit_button->setIcon(QIcon("../QtSourceCodeBrowser/icons/edit.png"));
   connect(f_edit_button, SIGNAL(clicked()), this, SLOT(editOn()));
 

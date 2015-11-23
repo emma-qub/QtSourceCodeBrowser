@@ -22,6 +22,7 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
 
   // Methods ComboBox
   m_methodsComboBox = new QComboBox;
+  m_methodsComboBox->setFixedHeight(27);
   connect(m_methodsComboBox, SIGNAL(activated(int)), this, SLOT(goToLine(int)));
 
   // Source editor
@@ -96,6 +97,7 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
 
   // Search line edit
   m_searchLineEdit = new QLineEdit;
+  m_searchLineEdit->setFixedHeight(27);
   m_searchLineEdit->setPlaceholderText("Source file");
   connect(m_searchLineEdit, SIGNAL(textChanged(QString)), this, SLOT(searchFiles(QString)));
 
