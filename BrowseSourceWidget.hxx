@@ -82,6 +82,7 @@ private:
   QString m_notesFilePath;
 
   QMap<QAction*, QModelIndex> m_actionSourcesMap;
+  QModelIndex m_currentOpenDocumentIndex;
 };
 
 #endif // BROWSESOURCEWIDGET_HXX

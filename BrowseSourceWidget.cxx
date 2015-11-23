@@ -17,7 +17,8 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   m_highlighters(),
   m_notesExist(false),
   m_notesFileInfo(),
-  m_notesFilePath() {
+  m_notesFilePath(),
+  m_currentOpenDocumentIndex() {
 
   // Methods ComboBox
   m_methodsComboBox = new QComboBox;
@@ -350,6 +351,7 @@ void BrowseSourceWidget::openDocumentInEditor(QString const& p_fileName, QString
       break;
     }
     case QMessageBox::Cancel: {
+      m_openDocumentsView->setCurrentIndex(m_currentOpenDocumentIndex);
       return;
     }
     case QMessageBox::Discard:
@@ -381,6 +383,7 @@ void BrowseSourceWidget::openDocumentInEditor(QString const& p_fileName, QString
   m_openDocumentsModel->insertDocument(p_fileName, p_absoluteFilePath);
   m_sourcesEditor->openSourceCode(p_fileName.split(".").first(), getSourceContent(p_absoluteFilePath), fileType);
   QModelIndex openIndex = m_openDocumentsProxyModel->mapFromSource(m_openDocumentsModel->indexFromFile(p_fileName, p_absoluteFilePath));
+  m_currentOpenDocumentIndex = openIndex;
   m_openDocumentsView->setCurrentIndex(openIndex);
 
   openNotesFromSource(p_fileName);
