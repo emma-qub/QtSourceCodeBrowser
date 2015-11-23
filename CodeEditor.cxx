@@ -127,7 +127,7 @@ void CodeEditor::openSourceCode(const QString& p_className, const QString& p_con
   }
   case ePrivateH:
   case eH: {
-    methodName.setPattern("(\\w+(::\\w+)?\\s*(\\*|&)*\\s*)?~?\\w+\\(((\\s*const\\s+)?\\w+(::\\w+)?\\s*(\\*|&)*\\s*\\w*(\\s*=\\s*(\\w+(::\\w+)?|\\d+|(\\w+\\s*\\(\\s*\\))))?)?(\\s*,\\s*(\\s*const\\s+)?\\w+(::\\w+)?\\s*(\\*|&)?\\s*\\w*(\\s*=\\s*(\\w+(::\\w+)?|\\d+|(\\w+\\s*\\(\\s*\\))))?)*\\s*\\)[\\s\\w]*((\\s*=\\s*0\\s*)?;|\\s*\\:?\\s*\\{[\\s\\w;]*\\})");
+    methodName.setPattern("\\n\\s*(\\w[\\w\\<\\*\\&\\,\\>:\\s]*)?(~?\\w+|\\s*operator\\s*..?\\s*)\\([\\w\\s,:=&\\*<>(\\(\\))]*\\)[\\n\\w\\s\\(\\):,]*(;|{)");
     //methodName.setPattern("\n.*\\(.*\\n*\\).*;");
     break;
   }
@@ -144,9 +144,17 @@ void CodeEditor::openSourceCode(const QString& p_className, const QString& p_con
   while (it.hasNext()) {
     QRegularExpressionMatch match = it.next();
     if (match.hasMatch()) {
-      ind = match.capturedStart()+1;
+      ind = match.capturedStart() + 2;
       if (!methodIsInComment(ind)) {
-        m_methodsPerLineMap.insert(ind, match.captured(0).replace(0, 1, "").split(QRegularExpression("\\n{")).first().split(QRegularExpression("\\n\\s*:")).first().split(QRegularExpression("\\n\\s*")).join(" "));
+        QString methodMatched = match.captured(0);
+        if (methodMatched.contains("return") || methodMatched.contains("typename")) {
+          continue;
+        }
+        QRegularExpression labelRegEx("\\n\\s*(public|private|protected|Q_SIGNALS|(public|private|protected)\\s+Q_SLOTS)\\s*:\\s*\\n");
+        int labelOffset = labelRegEx.match(methodMatched).captured(0).length();
+        ind += labelOffset;
+        methodMatched = methodMatched.remove(0, labelOffset+1).trimmed();
+        m_methodsPerLineMap.insert(ind, methodMatched.split(QRegularExpression("\\n{")).first().split(QRegularExpression("\\n\\s*:")).first().split(QRegularExpression("\\n\\s*")).join(" "));
       }
     }
   }
