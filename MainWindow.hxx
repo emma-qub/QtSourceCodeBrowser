@@ -11,6 +11,9 @@ class MainWindow: public QMainWindow {
 public:
   MainWindow(QWidget* p_parent = nullptr);
 
+protected:
+  void closeEvent(QCloseEvent* p_event) override;
+
 private:
   BrowseSourceWidget* m_centralWidget;
 };

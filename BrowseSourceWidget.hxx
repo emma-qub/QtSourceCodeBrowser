@@ -24,12 +24,16 @@ class BrowseSourceWidget: public QWidget {
 public:
   explicit BrowseSourceWidget(QWidget* p_parent = nullptr);
 
+  bool hasModificationsNotSaved() const { return m_notesTextEdit->hasModificationsNotSaved(); }
+
 protected:
   void keyReleaseEvent(QKeyEvent* p_event) override;
   void getNotesFileInfo(const QString& p_fileName);
 
-protected slots:
+public slots:
   void saveNotesFromSource();
+
+protected slots:
   void searchFiles(QString const& p_fileName);
   void openSourceCode(QModelIndex const& p_index);
   void destroyContextualMenu(QObject* p_object);
