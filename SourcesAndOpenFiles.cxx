@@ -148,16 +148,15 @@ void SourcesAndOpenFiles::destroyContextualMenu(QObject* p_object) {
 
 void SourcesAndOpenFiles::openSourceCodeFromMenu() {
   QAction* actionSender = dynamic_cast<QAction*>(sender());
-  Q_ASSERT(actionSender);
+  Q_ASSERT(actionSender != nullptr);
   emit openSourceCodeFromOpenDocumentsRequested(m_actionSourcesMap.value(actionSender));
 }
 
-void SourcesAndOpenFiles::expandTreeView(const QModelIndex& p_index)
-{
+void SourcesAndOpenFiles::expandTreeView(const QModelIndex& p_index) {
   m_searchLineEdit->clear();
+  m_sourcesTreeView->collapseAll();
   QString absolutePath = p_index.data(Qt::ToolTipRole).toString();
-  absolutePath.remove(m_rootDirectoryName);
-  QStringList path = absolutePath.split("/", QString::SkipEmptyParts);
+  m_sourcesTreeView->setCurrentIndex(m_sourceModel->index(absolutePath));
 }
 
 void SourcesAndOpenFiles::fillSourceModelFromSettingsDirectory(QString const& p_directoryName) {
