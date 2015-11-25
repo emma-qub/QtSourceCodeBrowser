@@ -66,7 +66,7 @@ public:
 
   void lineNumberAreaPaintEvent(QPaintEvent* p_event);
   int lineNumberAreaWidth();
-  void openSourceCode(QString const& p_className, QString const& p_content, FileType p_fileType);
+  void openSourceCode(QString const& p_content, FileType p_fileType);
 
 protected:
   void resizeEvent(QResizeEvent* p_event) override;

@@ -48,8 +48,6 @@ public slots:
 protected slots:
   void setPlainText(const QString& p_text);
   void setHtml(const QString& p_text);
-  void textRemoveFormat();
-  void textRemoveAllFormat();
   void textBold();
   void textUnderline();
   void textStrikeout();

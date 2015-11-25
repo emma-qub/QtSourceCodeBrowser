@@ -92,7 +92,7 @@ void CodeEditor::updateLineNumberArea(QRect const& p_rect, int p_dy) {
   }
 }
 
-void CodeEditor::openSourceCode(const QString& p_className, const QString& p_content, FileType p_fileType) {
+void CodeEditor::openSourceCode(const QString& p_content, FileType p_fileType) {
   setPlainText(p_content);
   m_methodsPerLineMap.clear();
   m_commentsVector.clear();
@@ -191,7 +191,7 @@ void CodeEditor::highlightCurrentLine() {
 
 void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent* p_event) {
   QPainter painter(m_lineNumberArea);
-  painter.fillRect(p_event->rect(), QColor("#EFEBE7"));
+  painter.fillRect(p_event->rect(), QColor("#EFEFEF"));
 
   QTextBlock block = firstVisibleBlock();
   int blockNumber = block.blockNumber();

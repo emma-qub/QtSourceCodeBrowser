@@ -19,6 +19,11 @@ MainWindow::MainWindow(QWidget* p_parent):
 
   // Set app icon
   setWindowIcon(QIcon("../QtSourceCodeBrowser/icons/appIcon.png"));
+
+  QFile file("../QtSourceCodeBrowser/css/style.css");
+  file.open(QFile::ReadOnly);
+  QString styleSheet = QLatin1String(file.readAll());
+  setStyleSheet(styleSheet);
 }
 
 void MainWindow::closeEvent(QCloseEvent* p_event)

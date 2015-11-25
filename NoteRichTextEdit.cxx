@@ -67,7 +67,7 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
   connect(f_edit_button, SIGNAL(clicked()), this, SLOT(editOn()));
 
   // Save button
-  f_save->setFixedSize(22, 24);
+  //f_save->setFixedSize(22, 24);
   f_save->setIcon(QIcon("../QtSourceCodeBrowser/icons/save.png"));
   f_save->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_S));
   connect(f_save, SIGNAL(clicked()), this, SLOT(editOff()));
@@ -91,7 +91,9 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
 
   // undo & redo
   f_undo->setShortcut(QKeySequence::Undo);
+  f_undo->setIcon(QIcon("../QtSourceCodeBrowser/icons/undo.png"));
   f_redo->setShortcut(QKeySequence::Redo);
+  f_redo->setIcon(QIcon("../QtSourceCodeBrowser/icons/redo.png"));
 
   connect(f_textedit->document(), SIGNAL(undoAvailable(bool)), f_undo, SLOT(setEnabled(bool)));
   connect(f_textedit->document(), SIGNAL(redoAvailable(bool)), f_redo, SLOT(setEnabled(bool)));
@@ -104,41 +106,23 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
 
   // link
   f_link->setShortcut(Qt::CTRL + Qt::Key_L);
-
+  f_link->setIcon(QIcon("../QtSourceCodeBrowser/icons/link.png"));
   connect(f_link, SIGNAL(clicked(bool)), this, SLOT(textLink(bool)));
 
   // bold, italic & underline
   f_bold->setShortcut(Qt::CTRL + Qt::Key_B);
+  f_bold->setIcon(QIcon("../QtSourceCodeBrowser/icons/bold.png"));
   f_italic->setShortcut(Qt::CTRL + Qt::Key_I);
+  f_italic->setIcon(QIcon("../QtSourceCodeBrowser/icons/italic.png"));
   f_underline->setShortcut(Qt::CTRL + Qt::Key_U);
-  f_strikeout->setFixedSize(22, 24);
-  f_strikeout->setIcon(QIcon("../QtSourceCodeBrowser/icons/strikeText.png"));
+  f_underline->setIcon(QIcon("../QtSourceCodeBrowser/icons/underline.png"));
+  //f_strikeout->setFixedSize(22, 24);
+  f_strikeout->setIcon(QIcon("../QtSourceCodeBrowser/icons/strike.png"));
 
   connect(f_bold, SIGNAL(clicked()), this, SLOT(textBold()));
   connect(f_italic, SIGNAL(clicked()), this, SLOT(textItalic()));
   connect(f_underline, SIGNAL(clicked()), this, SLOT(textUnderline()));
   connect(f_strikeout, SIGNAL(clicked()), this, SLOT(textStrikeout()));
-
-  QAction* removeFormat = new QAction(tr("Remove character formatting"), this);
-  removeFormat->setShortcut(QKeySequence("CTRL+M"));
-  connect(removeFormat, SIGNAL(triggered()), this, SLOT(textRemoveFormat()));
-  f_textedit->addAction(removeFormat);
-
-  QAction* removeAllFormat = new QAction(tr("Remove all formatting"), this);
-  connect(removeAllFormat, SIGNAL(triggered()), this, SLOT(textRemoveAllFormat()));
-  f_textedit->addAction(removeAllFormat);
-
-  QAction* textsource = new QAction(tr("Edit document source"), this);
-  textsource->setShortcut(QKeySequence("CTRL+O"));
-  connect(textsource, SIGNAL(triggered()), this, SLOT(textSource()));
-  f_textedit->addAction(textsource);
-
-  QMenu* menu = new QMenu(this);
-  menu->addAction(removeAllFormat);
-  menu->addAction(removeFormat);
-  menu->addAction(textsource);
-  f_menu->setMenu(menu);
-  f_menu->setPopupMode(QToolButton::InstantPopup);
 
   // lists
   f_list_bullet->setShortcut(Qt::CTRL + Qt::Key_Minus);
@@ -156,7 +140,9 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
   f_indent_inc->setShortcut(Qt::CTRL + Qt::Key_Tab);
 
   connect(f_indent_inc, SIGNAL(clicked()), this, SLOT(increaseIndentation()));
+  f_indent_inc->setIcon(QIcon("../QtSourceCodeBrowser/icons/indent-increase.png"));
   connect(f_indent_dec, SIGNAL(clicked()), this, SLOT(decreaseIndentation()));
+  f_indent_dec->setIcon(QIcon("../QtSourceCodeBrowser/icons/indent-decrease.png"));
 
   // font size
   QFontDatabase db;
@@ -182,12 +168,12 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
   connect(f_bgcolor, SIGNAL(clicked()), this, SLOT(textBgColor()));
 
   // images
-  f_image->setFixedSize(22, 24);
-  f_image->setIcon(QIcon("../QtSourceCodeBrowser/icons/image.png"));
-  connect(f_image, SIGNAL(clicked()), this, SLOT(insertImage()));
+  //f_image->setFixedSize(22, 24);
+//  f_image->setIcon(QIcon("../QtSourceCodeBrowser/icons/image.png"));
+//  connect(f_image, SIGNAL(clicked()), this, SLOT(insertImage()));
 
   // code
-  f_code->setFixedSize(22, 24);
+  //f_code->setFixedSize(22, 24);
   f_code->setIcon(QIcon("../QtSourceCodeBrowser/icons/code.png"));
   f_code->setShortcut(Qt::CTRL + Qt::Key_K);
   connect(f_code, SIGNAL(clicked(bool)), this, SLOT(insertCode(bool)));
@@ -256,35 +242,6 @@ void NoteRichTextEdit::setPlainText(const QString& p_text) {
 
 void NoteRichTextEdit::setHtml(const QString& p_text) {
   f_textedit->setHtml(p_text);
-}
-
-void NoteRichTextEdit::textRemoveFormat() {
-  QTextCharFormat fmt;
-  fmt.setFontWeight(QFont::Normal);
-  fmt.setFontUnderline(false);
-  fmt.setFontStrikeOut(false);
-  fmt.setFontItalic(false);
-  fmt.setFontPointSize(9);
-
-  f_bold->setChecked(false);
-  f_underline->setChecked(false);
-  f_italic->setChecked(false);
-  f_strikeout->setChecked(false);
-  f_fontsize->setCurrentIndex(f_fontsize->findText("9"));
-
-  fmt.clearBackground();
-
-  mergeFormatOnWordOrSelection(fmt);
-}
-
-void NoteRichTextEdit::textRemoveAllFormat() {
-  f_bold->setChecked(false);
-  f_underline->setChecked(false);
-  f_italic->setChecked(false);
-  f_strikeout->setChecked(false);
-  f_fontsize->setCurrentIndex(f_fontsize->findText("9"));
-  QString text = f_textedit->toPlainText();
-  f_textedit->setPlainText(text);
 }
 
 void NoteRichTextEdit::textBold() {

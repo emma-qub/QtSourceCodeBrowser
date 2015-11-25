@@ -14,44 +14,23 @@
 
 BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   QWidget(p_parent),
-  m_highlighters(),
   m_notesExist(false),
   m_notesFileInfo(),
   m_notesFilePath(),
   m_currentOpenDocumentIndex() {
 
-  // Methods ComboBox
-  m_methodsComboBox = new QComboBox;
-  m_methodsComboBox->setFixedHeight(27);
-  connect(m_methodsComboBox, SIGNAL(activated(int)), this, SLOT(goToLine(int)));
+  // Sources and open files
+  m_sourcesAndOpenFiles = new SourcesAndOpenFiles(this);
 
   // Source editor
-  m_sourcesEditor = new CodeEditor(this);
-
-  QFont font;
-  font.setFamily("Mono");
-  font.setFixedPitch(true);
-  font.setPointSize(10);
-
-  m_sourcesEditor->setFont(font);
-  m_sourcesEditor->setReadOnly(true);
-  m_sourcesEditor->setTextInteractionFlags(m_sourcesEditor->textInteractionFlags() | Qt::TextSelectableByKeyboard);
-  m_highlighters.append(new Highlighter(m_sourcesEditor->document()));
-  connect(m_sourcesEditor, SIGNAL(methodListReady(QMap<int,QString>)), this, SLOT(fillMethodsComboBox(QMap<int,QString>)));
-
-  // Methods and Sources Splitter
-  m_sourcesMethodsSplitter = new QSplitter(Qt::Vertical);
-  m_sourcesMethodsSplitter->addWidget(m_methodsComboBox);
-  m_sourcesMethodsSplitter->addWidget(m_sourcesEditor);
-  m_sourcesMethodsSplitter->setStretchFactor(0, 0);
-  m_sourcesMethodsSplitter->setStretchFactor(1, 1);
+  m_sourcesEditor = new SourceCodeEditor(this);
 
   // Note Text Edit
   m_notesTextEdit = new NoteRichTextEdit(this);
-  connect(m_notesTextEdit, SIGNAL(openSourceRequested(QString)), this, SLOT(openSourceCodeFromFileName(QString)));
+  connect(m_notesTextEdit, SIGNAL(openSourceRequested(QString)), m_sourcesAndOpenFiles, SLOT(openSourceCodeFromFileName(QString)));
   connect(m_notesTextEdit, SIGNAL(saveNotesRequested()), this, SLOT(saveNotesFromSource()));
-  connect(m_notesTextEdit, SIGNAL(modificationsNotSaved(bool)), this, SLOT(addOrRemoveStarToOpenDocument(bool)));
-  connect(m_notesTextEdit, SIGNAL(notesEditOff(bool)), this, SLOT(addOrRemoveStarToOpenDocument(bool)));
+  connect(m_notesTextEdit, SIGNAL(modificationsNotSaved(bool)), m_sourcesAndOpenFiles, SLOT(addOrRemoveStarToOpenDocument(bool)));
+  connect(m_notesTextEdit, SIGNAL(notesEditOff(bool)), m_sourcesAndOpenFiles, SLOT(addOrRemoveStarToOpenDocument(bool)));
 
   // Edit Notes ON horizontal
   QAction* editNotesOnHorizontalAction = new QAction(this);
@@ -73,90 +52,18 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
 
   // Sources and Notes Splitter
   m_sourcesNotesSplitter = new QSplitter;
-  m_sourcesNotesSplitter->addWidget(m_sourcesMethodsSplitter);
+  m_sourcesNotesSplitter->addWidget(m_sourcesEditor);
   m_sourcesNotesSplitter->addWidget(m_notesTextEdit);
   m_sourcesNotesSplitter->setStretchFactor(0, 1);
-  m_sourcesNotesSplitter->setStretchFactor(1, 0);
+  m_sourcesNotesSplitter->setStretchFactor(1, 2);
   m_notesTextEdit->hide();
 
-  // Settings
-  QSettings settings("ValentinMicheletINC", "QtSourceBrowser");
-  /// Uncomment below to reinit source directory
-  //settings.setValue("SourceDirectory", "");
-
-  // Root directory name
-  QString sourceDirectory = settings.value("SourceDirectory").toString();
-  while (sourceDirectory.isEmpty()) {
-    sourceDirectory = QInputDialog::getText(this, "Source Directory", "Provide the source directory");
-    if (sourceDirectory.endsWith("/")) {
-      sourceDirectory.remove(sourceDirectory.size()-1, 1);
-    }
-    settings.setValue("SourceDirectory", sourceDirectory);
-  }
-  m_rootDirectoryName = settings.value("SourceDirectory").toString();
-
-  // Search line edit
-  m_searchLineEdit = new QLineEdit;
-  m_searchLineEdit->setFixedHeight(27);
-  m_searchLineEdit->setPlaceholderText("Source file");
-  connect(m_searchLineEdit, SIGNAL(textChanged(QString)), this, SLOT(searchFiles(QString)));
-
-  // File System Model
-  m_sourceModel = new SourceFileSystemModel(this);
-  m_sourceRootIndex = m_sourceModel->setRootPath(m_rootDirectoryName);
-
-  // Source Tree View
-  m_sourcesTreeView = new QTreeView;
-  m_sourcesTreeView->setModel(m_sourceModel);
-  m_sourcesTreeView->setRootIndex(m_sourceRootIndex);
-  m_sourcesTreeView->resizeColumnToContents(0);
-  connect(m_sourcesTreeView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(openSourceCode(QModelIndex)));
-
-  // Source Search Model
-  m_sourceSearchModel = new OpenDocumentsModel(this);
-  initSourceSearchModel();
-
-  // Source Search Proxy model
-  m_proxyModel = new SourceFileSystemProxyModel(QModelIndex());
-  m_proxyModel->setSourceModel(m_sourceSearchModel);
-
-  // Source Search List View
-  m_sourceSearchView = new QListView;
-  m_sourceSearchView->setModel(m_proxyModel);
-  connect(m_sourceSearchView, SIGNAL(clicked(QModelIndex)), this, SLOT(openSourceCodeFromOpenDocuments(QModelIndex)));
-
-  // Source Search Stacked Widget
-  m_sourcesStackedWidget = new QStackedWidget;
-  m_sourcesStackedWidget->addWidget(m_sourcesTreeView);
-  m_sourcesStackedWidget->addWidget(m_sourceSearchView);
-
-  // Show only first column
-  for (int k = 1; k < m_sourceModel->columnCount(); ++k)
-    m_sourcesTreeView->hideColumn(k);
-
-  //Open documents model
-  m_openDocumentsModel = new OpenDocumentsModel;
-  m_openDocumentsProxyModel = new QSortFilterProxyModel;
-  m_openDocumentsProxyModel->setSourceModel(m_openDocumentsModel);
-  connect(m_openDocumentsModel, SIGNAL(rowsInserted(QModelIndex,int,int)), this, SLOT(sortOpenDocuments(QModelIndex,int,int)));
-
-  // Open documents view
-  m_openDocumentsView = new QListView;
-  m_openDocumentsView->setModel(m_openDocumentsProxyModel);
-  connect(m_openDocumentsView, SIGNAL(clicked(QModelIndex)), this, SLOT(openSourceCodeFromOpenDocuments(QModelIndex)));
-
-  // Left part
-  QSplitter* vsplitter = new QSplitter(Qt::Vertical);
-  vsplitter->addWidget(m_searchLineEdit);
-  vsplitter->addWidget(m_sourcesStackedWidget);
-  vsplitter->addWidget(m_openDocumentsView);
-  vsplitter->setStretchFactor(0, 0);
-  vsplitter->setStretchFactor(1, 2);
-  vsplitter->setStretchFactor(2, 1);
+  connect(m_sourcesAndOpenFiles, SIGNAL(openSourceCodeRequested(QModelIndex)), this, SLOT(openSourceCode(QModelIndex)));
+  connect(m_sourcesAndOpenFiles, SIGNAL(openSourceCodeFromOpenDocumentsRequested(QModelIndex)), this, SLOT(openSourceCodeFromOpenDocuments(QModelIndex)));
 
   // Main part
   QSplitter* hsplitter = new QSplitter;
-  hsplitter->addWidget(vsplitter);
+  hsplitter->addWidget(m_sourcesAndOpenFiles);
   hsplitter->addWidget(m_sourcesNotesSplitter);
   hsplitter->setStretchFactor(0, 0);
   hsplitter->setStretchFactor(1, 1);
@@ -169,14 +76,11 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
 
   setContextMenuPolicy(Qt::CustomContextMenu);
 
-  /////////////////////////////
-  openSourceCodeFromFileName("qmap.cpp");
-  openNotesFromSource("qmap.cpp");
-  m_notesTextEdit->show();
+  layout()->setContentsMargins(0, 0, 0, 0);
 }
 
 void BrowseSourceWidget::keyReleaseEvent(QKeyEvent* p_event) {
-  QString currentSourceOpen = m_openDocumentsView->currentIndex().data(Qt::ToolTipRole).toString();
+  QString currentSourceOpen = m_sourcesAndOpenFiles->getCurrentOpenDocumentAbsolutePath();
   if (currentSourceOpen.isEmpty())
     return;
 
@@ -218,16 +122,6 @@ void BrowseSourceWidget::keyReleaseEvent(QKeyEvent* p_event) {
   }
 }
 
-void BrowseSourceWidget::searchFiles(QString const& p_fileName) {
-  if (p_fileName.isEmpty() && m_sourcesStackedWidget->currentWidget() != m_sourcesTreeView) {
-    m_sourcesStackedWidget->setCurrentWidget(m_sourcesTreeView);
-  } else if (!p_fileName.isEmpty() && m_sourcesStackedWidget->currentWidget() != m_sourceSearchView) {
-    m_sourcesStackedWidget->setCurrentWidget(m_sourceSearchView);
-  }
-
-  m_proxyModel->setFilterRegExp(p_fileName);
-}
-
 void BrowseSourceWidget::openSourceCode(QModelIndex const& p_index) {
   QString fileName(p_index.data().toString());
   if (fileName.endsWith(".cpp") || fileName.endsWith(".h")) {
@@ -249,10 +143,6 @@ void BrowseSourceWidget::openSourceCode(QModelIndex const& p_index) {
   }
 }
 
-void BrowseSourceWidget::sortOpenDocuments(QModelIndex, int, int) {
-  m_openDocumentsProxyModel->sort(0);
-}
-
 void BrowseSourceWidget::showHorizontal() {
   m_sourcesNotesSplitter->setOrientation(Qt::Horizontal);
   m_notesTextEdit->show();
@@ -261,77 +151,6 @@ void BrowseSourceWidget::showHorizontal() {
 void BrowseSourceWidget::showVertical() {
   m_sourcesNotesSplitter->setOrientation(Qt::Vertical);
   m_notesTextEdit->show();
-}
-
-void BrowseSourceWidget::openSourceCodeFromFileName(const QString& p_fileName) {
-  m_searchLineEdit->setText("^"+p_fileName.toLower()+"(_p)?\\.");
-  QMenu contextMenu(tr("Context menu"), this);
-  contextMenu.setStyleSheet("QMenu { menu-scrollable: 1; }");
-
-  for (int k = 0; k < m_sourceSearchView->model()->rowCount(); ++k) {
-    QString sourceFileName = m_sourceSearchView->model()->index(k, 0).data().toString();
-    QAction* action = new QAction(sourceFileName, this);
-    connect(action, SIGNAL(triggered()), this, SLOT(openSourceCodeFromMenu()));
-    contextMenu.addAction(action);
-    if (sourceFileName.endsWith(".cpp")) {
-      action->setIcon(QIcon("../QtSourceCodeBrowser/icons/cppFile.png"));
-    } else if (sourceFileName.endsWith(".h")) {
-      action->setIcon(QIcon("../QtSourceCodeBrowser/icons/hFile.png"));
-    }
-    m_actionSourcesMap.insert(action, m_sourceSearchView->model()->index(k, 0));
-  }
-  contextMenu.exec(cursor().pos());
-  connect(&contextMenu, SIGNAL(destroyed(QObject*)), this, SLOT(destroyContextualMenu(QObject*)));
-}
-
-void BrowseSourceWidget::fillMethodsComboBox(QMap<int, QString> const& p_methodsAndIndex)
-{
-  m_methodsComboBox->clear();
-  for (int index: p_methodsAndIndex.keys())
-  {
-    m_methodsComboBox->addItem(p_methodsAndIndex.value(index), QVariant::fromValue(index));
-  }
-}
-
-void BrowseSourceWidget::goToLine(int p_index)
-{
-  QTextCursor cursor = m_sourcesEditor->textCursor();
-  m_sourcesEditor->moveCursor(QTextCursor::End);
-
-  int middleLine = m_sourcesEditor->viewport()->height() / (2 * m_sourcesEditor->fontMetrics().height());
-
-  cursor.setPosition(m_methodsComboBox->itemData(p_index).toInt());
-  m_sourcesEditor->setTextCursor(cursor);
-
-  for (int k = 0; k < middleLine; ++k)
-    m_sourcesEditor->moveCursor(QTextCursor::Up);
-  for (int k = 0; k < middleLine; ++k)
-    m_sourcesEditor->moveCursor(QTextCursor::Down);
-}
-
-void BrowseSourceWidget::addOrRemoveStarToOpenDocument(bool p_add)
-{
-  QModelIndex currentOpenDocumentIndex = m_openDocumentsProxyModel->mapToSource(m_openDocumentsView->currentIndex());
-  QString newCurrentOpenDocumentName = m_openDocumentsModel->data(currentOpenDocumentIndex).toString();
-  if (p_add && !newCurrentOpenDocumentName.endsWith("*")) {
-    newCurrentOpenDocumentName += "*";
-  } else if (!p_add && newCurrentOpenDocumentName.endsWith("*")) {
-    newCurrentOpenDocumentName.remove(newCurrentOpenDocumentName.size()-1, 1);
-  }
-  m_openDocumentsModel->setData(currentOpenDocumentIndex, newCurrentOpenDocumentName);
-}
-
-void BrowseSourceWidget::destroyContextualMenu(QObject* p_object) {
-  Q_UNUSED(p_object)
-  qDeleteAll(m_actionSourcesMap.keys());
-  m_actionSourcesMap.clear();
-  m_searchLineEdit->clear();
-}
-
-void BrowseSourceWidget::openSourceCodeFromMenu() {
-  QAction* actionSender = dynamic_cast<QAction*>(sender());
-  Q_ASSERT(actionSender);
-  openSourceCodeFromOpenDocuments(m_actionSourcesMap.value(actionSender));
 }
 
 void BrowseSourceWidget::openSourceCodeFromOpenDocuments(QModelIndex const& p_index) {
@@ -354,7 +173,7 @@ void BrowseSourceWidget::openDocumentInEditor(QString const& p_fileName, QString
       break;
     }
     case QMessageBox::Cancel: {
-      m_openDocumentsView->setCurrentIndex(m_currentOpenDocumentIndex);
+      m_sourcesAndOpenFiles->setCurrentIndex(m_currentOpenDocumentIndex);
       return;
     }
     case QMessageBox::Discard:
@@ -383,11 +202,11 @@ void BrowseSourceWidget::openDocumentInEditor(QString const& p_fileName, QString
     fileType = CodeEditor::eOtherFile;
   }
 
-  m_openDocumentsModel->insertDocument(p_fileName, p_absoluteFilePath);
-  m_sourcesEditor->openSourceCode(p_fileName.split(".").first(), getSourceContent(p_absoluteFilePath), fileType);
-  QModelIndex openIndex = m_openDocumentsProxyModel->mapFromSource(m_openDocumentsModel->indexFromFile(p_fileName, p_absoluteFilePath));
+  m_sourcesAndOpenFiles->insertDocument(p_fileName, p_absoluteFilePath);
+  m_sourcesEditor->openSourceCode(getSourceContent(p_absoluteFilePath), fileType);
+  QModelIndex openIndex = m_sourcesAndOpenFiles->getCurrentOpenDocumentIndex(p_fileName, p_absoluteFilePath);
   m_currentOpenDocumentIndex = openIndex;
-  m_openDocumentsView->setCurrentIndex(openIndex);
+  m_sourcesAndOpenFiles->setCurrentIndex(openIndex);
 
   openNotesFromSource(p_fileName);
 }
@@ -411,26 +230,6 @@ QString BrowseSourceWidget::getSourceContent(QString const& p_absoluteFilePath) 
   return content;
 }
 
-void BrowseSourceWidget::initSourceSearchModel() {
-  QSettings settings("ValentinMicheletINC", "QtSourceBrowser");
-  fillSourceModelFromDirectory(settings.value("SourceDirectory").toString());
-}
-
-void BrowseSourceWidget::fillSourceModelFromDirectory(QString const& p_directoryName)
-{
-  QDir directory(p_directoryName);
-  QStringList subDirectories = directory.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
-  QStringList sourceCodeFiles = directory.entryList(QStringList() << "*.cpp" << "*.h", QDir::Files);
-
-  for (QString const& sourceCodeFile: sourceCodeFiles) {
-    m_sourceSearchModel->insertDocument(sourceCodeFile, p_directoryName+QDir::separator()+sourceCodeFile);
-  }
-
-  for (QString const& subDirectory: subDirectories) {
-    fillSourceModelFromDirectory(p_directoryName+QDir::separator()+subDirectory);
-  }
-}
-
 void BrowseSourceWidget::saveNotesFromSource()
 {
   if (m_notesFilePath.isEmpty()) {
@@ -448,7 +247,7 @@ void BrowseSourceWidget::saveNotesFromSource()
 
   noteFile.close();
 
-  addOrRemoveStarToOpenDocument(false);
+  m_sourcesAndOpenFiles->addOrRemoveStarToOpenDocument(false);
 }
 
 void BrowseSourceWidget::getNotesFileInfo(QString const& p_fileName) {

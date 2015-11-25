@@ -8,7 +8,9 @@ SOURCES += \
     SourceFileSystemProxyModel.cxx \
     OpenDocumentsModel.cxx \
     NoteTextEdit.cxx \
-    NoteRichTextEdit.cxx
+    NoteRichTextEdit.cxx \
+    SourceCodeEditor.cxx \
+    SourcesAndOpenFiles.cxx
 
 HEADERS += \
     MainWindow.hxx \
@@ -19,10 +21,14 @@ HEADERS += \
     SourceFileSystemProxyModel.hxx \
     OpenDocumentsModel.hxx \
     NoteTextEdit.hxx \
-    NoteRichTextEdit.hxx
+    NoteRichTextEdit.hxx \
+    SourceCodeEditor.hxx \
+    SourcesAndOpenFiles.hxx
 
 FORMS += \
-    NoteRichTextEdit.ui
+    NoteRichTextEdit.ui \
+    SourceCodeEditor.ui \
+    SourcesAndOpenFiles.ui
 
 QT += \
     widgets \
