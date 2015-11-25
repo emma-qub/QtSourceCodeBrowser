@@ -33,22 +33,25 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   connect(m_notesTextEdit, SIGNAL(notesEditOff(bool)), m_sourcesAndOpenFiles, SLOT(addOrRemoveStarToOpenDocument(bool)));
 
   // Edit Notes ON horizontal
-  QAction* editNotesOnHorizontalAction = new QAction(this);
-  editNotesOnHorizontalAction->setShortcut(QKeySequence("CTRL+E,3"));
-  addAction(editNotesOnHorizontalAction);
-  connect(editNotesOnHorizontalAction, SIGNAL(triggered()), this, SLOT(showHorizontal()));
+  m_editNotesOnHorizontalAction = new QAction(this);
+  m_editNotesOnHorizontalAction->setShortcut(QKeySequence("CTRL+E,3"));
+  addAction(m_editNotesOnHorizontalAction);
+  connect(m_editNotesOnHorizontalAction, SIGNAL(triggered()), this, SLOT(showHorizontal()));
+  m_editNotesOnHorizontalAction->setEnabled(false);
 
   // Edit Notes ON vertical
-  QAction* editNotesOnVerticalAction = new QAction(this);
-  editNotesOnVerticalAction->setShortcut(QKeySequence("CTRL+E,2"));
-  addAction(editNotesOnVerticalAction);
-  connect(editNotesOnVerticalAction, SIGNAL(triggered()), this, SLOT(showVertical()));
+  m_editNotesOnVerticalAction = new QAction(this);
+  m_editNotesOnVerticalAction->setShortcut(QKeySequence("CTRL+E,2"));
+  addAction(m_editNotesOnVerticalAction);
+  connect(m_editNotesOnVerticalAction, SIGNAL(triggered()), this, SLOT(showVertical()));
+  m_editNotesOnVerticalAction->setEnabled(false);
 
   // Edit Notes OFF
-  QAction* editNotesOffAction = new QAction(this);
-  editNotesOffAction->setShortcut(QKeySequence("CTRL+E,1"));
-  addAction(editNotesOffAction);
-  connect(editNotesOffAction, SIGNAL(triggered()), m_notesTextEdit, SLOT(hide()));
+  m_editNotesOffAction = new QAction(this);
+  m_editNotesOffAction->setShortcut(QKeySequence("CTRL+E,1"));
+  addAction(m_editNotesOffAction);
+  connect(m_editNotesOffAction, SIGNAL(triggered()), this, SLOT(hideNotesTextEdit()));
+  m_editNotesOffAction->setEnabled(false);
 
   // Sources and Notes Splitter
   m_sourcesNotesSplitter = new QSplitter;
@@ -146,11 +149,25 @@ void BrowseSourceWidget::openSourceCode(QModelIndex const& p_index) {
 void BrowseSourceWidget::showHorizontal() {
   m_sourcesNotesSplitter->setOrientation(Qt::Horizontal);
   m_notesTextEdit->show();
+  m_editNotesOffAction->setEnabled(true);
+  m_editNotesOnHorizontalAction->setEnabled(false);
+  m_editNotesOnVerticalAction->setEnabled(true);
 }
 
 void BrowseSourceWidget::showVertical() {
   m_sourcesNotesSplitter->setOrientation(Qt::Vertical);
   m_notesTextEdit->show();
+  m_editNotesOffAction->setEnabled(true);
+  m_editNotesOnHorizontalAction->setEnabled(true);
+  m_editNotesOnVerticalAction->setEnabled(false);
+}
+
+void BrowseSourceWidget::hideNotesTextEdit()
+{
+  m_notesTextEdit->hide();
+  m_editNotesOffAction->setEnabled(false);
+  m_editNotesOnHorizontalAction->setEnabled(true);
+  m_editNotesOnVerticalAction->setEnabled(true);
 }
 
 void BrowseSourceWidget::openSourceCodeFromOpenDocuments(QModelIndex const& p_index) {
@@ -272,4 +289,7 @@ void BrowseSourceWidget::openNotesFromSource(QString const& p_fileName) {
   if (m_notesExist) {
     m_notesTextEdit->setText(getSourceContent(m_notesFilePath));
   }
+
+  m_editNotesOnHorizontalAction->setEnabled(true);
+  m_editNotesOnVerticalAction->setEnabled(true);
 }

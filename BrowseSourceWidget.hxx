@@ -29,6 +29,7 @@ protected slots:
   void openSourceCodeFromOpenDocuments(QModelIndex const& p_index);
   void showHorizontal();
   void showVertical();
+  void hideNotesTextEdit();
 
 private:
   QString getSourceContent(QString const& p_absoluteFilePath);
@@ -45,6 +46,10 @@ private:
   QString m_notesFilePath;
 
   QModelIndex m_currentOpenDocumentIndex;
+
+  QAction* m_editNotesOnHorizontalAction;
+  QAction* m_editNotesOnVerticalAction;
+  QAction* m_editNotesOffAction;
 };
 
 #endif // BROWSESOURCEWIDGET_HXX
