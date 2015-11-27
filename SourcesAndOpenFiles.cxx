@@ -46,11 +46,11 @@ SourcesAndOpenFiles::SourcesAndOpenFiles(QWidget* p_parent):
   fillSourceModelFromSettingsDirectory(m_rootDirectoryName);
 
   // Source Search Proxy model
-  m_proxyModel = new SourceFileSystemProxyModel(QModelIndex());
-  m_proxyModel->setSourceModel(m_sourceSearchModel);
+  m_sourceFileSystemProxyModel = new SourceFileSystemProxyModel(QModelIndex());
+  m_sourceFileSystemProxyModel->setSourceModel(m_sourceSearchModel);
 
   // Source Search List View
-  m_sourceSearchView->setModel(m_proxyModel);
+  m_sourceSearchView->setModel(m_sourceFileSystemProxyModel);
   connect(m_sourceSearchView, SIGNAL(clicked(QModelIndex)), this, SIGNAL(openSourceCodeFromSearchRequested(QModelIndex)));
   connect(m_sourceSearchView, SIGNAL(clicked(QModelIndex)), this, SLOT(expandTreeView(QModelIndex)));
   connect(m_openDocumentsView, SIGNAL(clicked(QModelIndex)), this, SLOT(expandTreeView(QModelIndex)));
@@ -61,10 +61,12 @@ SourcesAndOpenFiles::SourcesAndOpenFiles(QWidget* p_parent):
 
   //Open documents model
   m_openDocumentsModel = new OpenDocumentsModel;
-  ///connect(m_openDocumentsModel, SIGNAL(rowsInserted(QModelIndex,int,int)), this, SLOT(sortOpenDocuments(QModelIndex,int,int)));
+  m_openDocumentsSortFilterProxyModel = new QSortFilterProxyModel;
+  m_openDocumentsSortFilterProxyModel->setSourceModel(m_openDocumentsModel);
+  connect(m_openDocumentsSortFilterProxyModel, SIGNAL(rowsInserted(QModelIndex,int,int)), this, SLOT(sortOpenDocuments(QModelIndex,int,int)));
 
   // Open documents view
-  m_openDocumentsView->setModel(m_openDocumentsModel);
+  m_openDocumentsView->setModel(m_openDocumentsSortFilterProxyModel);
   connect(m_openDocumentsView, SIGNAL(clicked(QModelIndex)), this, SIGNAL(openSourceCodeFromOpenDocumentsRequested(QModelIndex)));
 
   // Splitter
@@ -98,8 +100,8 @@ QModelIndex SourcesAndOpenFiles::getCurrentIndex() const {
 }
 
 void SourcesAndOpenFiles::setCurrentIndex(const QString& p_fileName, const QString& p_absoluteFilePath) {
-  for (int k = 0; k < m_openDocumentsModel->rowCount(); ++k) {
-    QModelIndex currentIndex = m_openDocumentsModel->index(k, 0);
+  for (int k = 0; k < m_openDocumentsSortFilterProxyModel->rowCount(); ++k) {
+    QModelIndex currentIndex = m_openDocumentsSortFilterProxyModel->index(k, 0);
     if ((currentIndex.data() == p_fileName || currentIndex.data() == p_fileName+"*")
       && currentIndex.data(Qt::ToolTipRole) == p_absoluteFilePath) {
       m_openDocumentsView->setCurrentIndex(currentIndex);
@@ -146,11 +148,11 @@ void SourcesAndOpenFiles::searchFiles(QString const& p_fileName) {
     m_sourcesStackedWidget->setCurrentWidget(m_sourceSearchView->parentWidget());
   }
 
-  m_proxyModel->setFilterRegExp(p_fileName);
+  m_sourceFileSystemProxyModel->setFilterRegExp(p_fileName);
 }
 
 void SourcesAndOpenFiles::sortOpenDocuments(QModelIndex, int, int) {
-  m_openDocumentsModel->sort(0);
+  m_openDocumentsSortFilterProxyModel->sort(0);
 }
 
 void SourcesAndOpenFiles::destroyContextualMenu(QObject* p_object) {

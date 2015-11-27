@@ -52,18 +52,15 @@ private:
   SourceFileSystemModel* m_sourceModel;
 
   OpenDocumentsModel* m_sourceSearchModel;
-  SourceFileSystemProxyModel* m_proxyModel;
-
-  QModelIndex m_sourceRootIndex;
-  QModelIndex m_proxyRootIndex;
-
-  QString m_rootDirectoryName;
+  SourceFileSystemProxyModel* m_sourceFileSystemProxyModel;
 
   OpenDocumentsModel* m_openDocumentsModel;
+  QSortFilterProxyModel* m_openDocumentsSortFilterProxyModel;
 
   QMap<QAction*, QModelIndex> m_actionSourcesMap;
 
-  QString m_previousAbsolutePath;
+  QString m_rootDirectoryName;
+  QModelIndex m_sourceRootIndex;
 };
 
 #endif // SOURCESANDOPENFILES_HXX
