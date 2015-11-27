@@ -26,8 +26,11 @@ class BrowseSourceWidget: public QWidget {
       QString currentAbsoluteFilePath = getCurrentNotesAbsoluteFilePath();
       return isNotesSaved(currentAbsoluteFilePath, getCurrentOpenDocumentFileName(currentAbsoluteFilePath));
     }
-    void setCurrentNotesSaveState(bool p_saved) {
-      QString absoluteFilePath = getCurrentOpenDocumentAbsoluteFilePath();
+    void setNotesSaveState(bool p_saved, QString p_absoluteFilePath = "") {
+      QString absoluteFilePath = p_absoluteFilePath;
+      if (absoluteFilePath.isEmpty()) {
+        absoluteFilePath = getCurrentOpenDocumentAbsoluteFilePath();
+      }
       QFileInfo currentFileInfo(absoluteFilePath);
       setNoteSaveState(absoluteFilePath, currentFileInfo.fileName(), p_saved);
     }
@@ -92,7 +95,7 @@ class BrowseSourceWidget: public QWidget {
     QList<QPair<QString, QString>> getNotSavedNotesList() const {
       QList<QPair<QString, QString>> notSavedNotesList;
       for (auto currentNotSavedNotes: getNotSavedNotes()) {
-        notSavedNotesList << QPair<QString, QString>(getNotesAbsolutePathFromOpenDocumentAbsolutePath(currentNotSavedNotes.first), currentNotSavedNotes.second);
+        notSavedNotesList << currentNotSavedNotes;
       }
       return notSavedNotesList;
     }
@@ -133,6 +136,11 @@ class BrowseSourceWidget: public QWidget {
       return notesPathFileInfo.absolutePath()+QDir::separator()+baseName+".txt";
     }
 
+    QString getFileNameFromOpenDocumentAbsolutePath(QString const& p_absoluteFilePath) const {
+      QFileInfo fileInfo(p_absoluteFilePath);
+      return fileInfo.fileName();
+    }
+
   protected:
     void setNoteSaveState(QString const& p_absoluteFilePath, QString const& p_fileName, bool p_saved) {
       auto key = QPair<QString, QString>(p_absoluteFilePath, p_fileName);
@@ -151,11 +159,6 @@ class BrowseSourceWidget: public QWidget {
       m_currentNoteAndSourceAbsoluteFilePath = QPair<QString, QString>(p_notesAbsoluteFilePath, p_absoluteFilePath);
     }
 
-    QString getFileNameFromOpenDocumentAbsolutePath(QString const& p_absoluteFilePath) const {
-      QFileInfo fileInfo(p_absoluteFilePath);
-      return fileInfo.fileName();
-    }
-
   private:
     QMap<QPair<QString, QString>, bool> m_noteSaveStates;
     QPair<QString, QString> m_currentNoteAndSourceAbsoluteFilePath;
@@ -168,19 +171,23 @@ public:
 
   bool hasModificationsNotSaved() const { return m_browseFileInfo.hasNoteNotSaved(); }
   QList<QPair<QString, QString>> getNotSavedNotes() const;
+  int askToSave(QStringList const& fileNamesList) const;
+  void getNotesListToSaveAndFileNamesList(QStringList& p_absoluteFilePathList, QStringList& p_fileNamesList) const;
 
 protected:
   void keyReleaseEvent(QKeyEvent* p_event) override;
-  void addOrRemoveStarToOpenDocument(bool p_value);
-  NoteRichTextEdit* getNotesTextEditFromPosition(int p_position) const;
+  void addOrRemoveStarToOpenDocument(bool p_value, const QString& p_absoluteFilePath = "");
+  NoteRichTextEdit* getNotesTextEditFromPosition(int p_position = -1) const;
 
 public slots:
-  void saveNotesFromSource(QStringList const& p_notesListToSave = QStringList());
-  void saveNotesFromSource(QString const& p_notesAbsoluteFilePath);
+  void saveNotesFromSourceAndCloseEditor();
+  void saveAllNotes();
+  void saveNotesFromSource(QStringList const& p_absoluteFilePathListToSave = QStringList());
+  void saveNotesFromSource(QString const& p_absoluteFilePath);
   void showHorizontal();
   void showVertical();
   void hideNotesTextEdit();
-  void closeNotesAndSource(const QString& p_absoluteFilePath = "");
+  void closeNotesAndSource(QString const& p_absoluteFilePath = "");
   void closeAllNotesAndSource();
 
 protected slots:
@@ -188,8 +195,7 @@ protected slots:
   void openSourceCodeFromSearch(QModelIndex const& p_index);
   void openSourceCodeFromOpenDocuments(QModelIndex const& p_index);
   void openSourceCodeFromContextualMenu(QModelIndex const& p_index);
-  void updateSaveStateToCurrentNotes(bool p_value);
-//  void openPreviousSourcesAndNotes(QModelIndex const& p_index);
+  void updateSaveStateToNotes(bool p_value, QString const& p_absoluteFilePath = "");
 
 signals:
   void enableSplitRequested();
@@ -199,7 +205,6 @@ private:
   QString getFileContent(QString const& p_absoluteFilePath);
   void openDocumentInEditor(QString const& p_fileName, QString const& p_absoluteFilePath);
   void openNotes(QString const& p_notesAbsoluteFilePath);
-  int askToSave(QStringList const& fileNamesList) const;
 
   BrowseFileInfo m_browseFileInfo;
 

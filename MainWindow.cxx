@@ -17,17 +17,36 @@ MainWindow::MainWindow(QWidget* p_parent):
   // File QMenu
   QMenu* fileMenu = menuBar()->addMenu("File");
 
-  // Close current source
-  QAction* closeCurrentSource = new QAction("Close", this);
-  closeCurrentSource->setShortcut(QKeySequence(Qt::CTRL+Qt::Key_W));
-  connect(closeCurrentSource, SIGNAL(triggered()), m_centralWidget, SLOT(closeNotesAndSource()));
-  fileMenu->addAction(closeCurrentSource);
+  // Save current notes
+  QAction* saveAction = new QAction("Save", this);
+  saveAction->setShortcut(QKeySequence::Save);
+  connect(saveAction, SIGNAL(triggered()), m_centralWidget, SLOT(saveNotesFromSource()));
+  fileMenu->addAction(saveAction);
+
+  // Save current notes and close editor
+  QAction* saveAndCloseEditAction = new QAction("Save and close editor", this);
+  saveAndCloseEditAction->setShortcut(QKeySequence(Qt::CTRL+Qt::ALT+Qt::Key_S));
+  connect(saveAndCloseEditAction, SIGNAL(triggered()), m_centralWidget, SLOT(saveNotesFromSourceAndCloseEditor()));
+  fileMenu->addAction(saveAndCloseEditAction);
+
+  // Save all notes
+  QAction* saveAllAction = new QAction("Save all", this);
+  saveAllAction->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_S));
+  connect(saveAllAction, SIGNAL(triggered()), m_centralWidget, SLOT(saveAllNotes()));
+  fileMenu->addAction(saveAllAction);
+  fileMenu->addSeparator();
 
   // Close current source
-  QAction* closeAllSource = new QAction("Close all", this);
-  closeAllSource->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_W));
-  connect(closeAllSource, SIGNAL(triggered()), m_centralWidget, SLOT(closeAllNotesAndSource()));
-  fileMenu->addAction(closeAllSource);
+  QAction* closeCurrentSourceAction = new QAction("Close", this);
+  closeCurrentSourceAction->setShortcut(QKeySequence(Qt::CTRL+Qt::Key_W));
+  connect(closeCurrentSourceAction, SIGNAL(triggered()), m_centralWidget, SLOT(closeNotesAndSource()));
+  fileMenu->addAction(closeCurrentSourceAction);
+
+  // Close current source
+  QAction* closeAllSourceAction = new QAction("Close all", this);
+  closeAllSourceAction->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_W));
+  connect(closeAllSourceAction, SIGNAL(triggered()), m_centralWidget, SLOT(closeAllNotesAndSource()));
+  fileMenu->addAction(closeAllSourceAction);
 
   // Quit action
   QAction* quitAction = new QAction("Quit", this);
@@ -75,41 +94,17 @@ MainWindow::MainWindow(QWidget* p_parent):
   setStyleSheet(styleSheet);
 }
 
-void MainWindow::closeEvent(QCloseEvent* p_event)
-{
-  QList<QPair<QString, QString>> notesListToSave = m_centralWidget->getNotSavedNotes();
-  if (notesListToSave.size() > 0) {
-    QStringList notesListAbsoluteFilePath;
-    QStringList fileNamesList;
-    for (auto currentNotesAndFileNames: notesListToSave) {
-      notesListAbsoluteFilePath << currentNotesAndFileNames.first;
-      fileNamesList << currentNotesAndFileNames.second;
-    }
+void MainWindow::closeEvent(QCloseEvent* p_event) {
+  QStringList absoluteFilePathList;
+  QStringList fileNamesList;
+  m_centralWidget->getNotesListToSaveAndFileNamesList(absoluteFilePathList, fileNamesList);
+  if (fileNamesList.size() > 0) {
+    int confirm = m_centralWidget->askToSave(fileNamesList);
 
-    QMessageBox msgBox;
-
-    QString text;
-    if (fileNamesList.size() == 1) {
-      text = "The document "+fileNamesList.first()+" has been modified.";
-      msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-      msgBox.setDefaultButton(QMessageBox::Save);
-    } else {
-      text += "These documents have been modified:\n";
-      for (auto currentFileName: fileNamesList) {
-        text += currentFileName+"\n";
-      }
-      msgBox.setStandardButtons(QMessageBox::SaveAll | QMessageBox::Discard | QMessageBox::Cancel);
-      msgBox.setDefaultButton(QMessageBox::SaveAll);
-    }
-
-    msgBox.setText(text);
-    msgBox.setInformativeText("Do you want to save your changes?");
-
-    int ret = msgBox.exec();
-    switch (ret) {
+    switch (confirm) {
     case QMessageBox::Save:
     case QMessageBox::SaveAll: {
-      m_centralWidget->saveNotesFromSource(notesListAbsoluteFilePath);
+      m_centralWidget->saveNotesFromSource(absoluteFilePathList);
       break;
     }
     case QMessageBox::Cancel: {

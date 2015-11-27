@@ -18,6 +18,8 @@ public:
   bool setData(QModelIndex const& p_index, QVariant const& p_value, int p_role = Qt::DisplayRole) override;
   QVariant data(QModelIndex const& p_index, int p_role = Qt::EditRole) const override;
 
+  QModelIndex getIndexFromFileNameAndAbsolutePath(QString const& p_fileName, QString const& p_absoluteFilePath) const;
+
 private:
   bool documentAlreadyOpen(QString const& p_fileName, QString const& p_absoluteFilePath);
   bool removeRow(int p_row, QModelIndex const& p_parent = QModelIndex()) { return QStringListModel::removeRow(p_row, p_parent); }

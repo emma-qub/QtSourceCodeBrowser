@@ -59,6 +59,17 @@ QVariant OpenDocumentsModel::data(QModelIndex const& p_index, int p_role) const 
   return QStringListModel::data(p_index, p_role);
 }
 
+QModelIndex OpenDocumentsModel::getIndexFromFileNameAndAbsolutePath(const QString& p_fileName, const QString& p_absoluteFilePath) const {
+  for (int k = 0; k < rowCount(); ++k) {
+    QModelIndex currentIndex = index(k);
+    if ((currentIndex.data().toString() == p_fileName || currentIndex.data().toString() == p_fileName+"*")
+      && currentIndex.data(Qt::ToolTipRole) == p_absoluteFilePath) {
+      return currentIndex;
+    }
+  }
+  return QModelIndex();
+}
+
 bool OpenDocumentsModel::documentAlreadyOpen(QString const& p_fileName, QString const& p_absoluteFilePath) {
   for (int k = 0; k < rowCount(); ++k) {
     QModelIndex currentIndex = index(k);

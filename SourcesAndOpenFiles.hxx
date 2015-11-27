@@ -34,7 +34,6 @@ public slots:
   void openSourceCodeFromFileName(QString const& p_fileName);
 
 protected slots:
-  //void openPreviousSource(QModelIndex const& p_currentIndex);
   void searchFiles(QString const& p_fileName);
   void sortOpenDocuments(QModelIndex, int, int);
   void destroyContextualMenu(QObject* p_object);
@@ -46,9 +45,6 @@ signals:
   void openSourceCodeFromSearchRequested(QModelIndex);
   void openSourceCodeFromOpenDocumentsRequested(QModelIndex);
   void openSourceCodeFromContextualMenuRequested(QModelIndex);
-  //void openPreviousSourceRequested(QModelIndex);
-  //void clearSourceCodeRequested();
-  //void clearAllSourceCodeRequested();
 
 private:
   void fillSourceModelFromSettingsDirectory(QString const& p_directoryName);

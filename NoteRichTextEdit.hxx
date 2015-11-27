@@ -39,8 +39,11 @@ public:
   QTextDocument* document() const;
   QTextCursor textCursor() const;
   void setTextCursor(const QTextCursor& p_cursor);
-
   void openNotes(QString const& p_fileName);
+
+public slots:
+  void editOn();
+  void editOff();
 
 protected slots:
   void setPlainText(const QString& p_text);
@@ -66,8 +69,6 @@ protected slots:
   void transformTextToInternalLink(QTextCursor const& p_cursor);
   void transformInternalLinkBack();
   void requesContextualMenuFromCursorPosition(const QTextCursor& p_cursor);
-  void editOn();
-  void editOff();
   void saveDraft();
   void updateStackIndexAndRequestSaveNotes();
   void emitModificationsNotSaved(bool p_saved);

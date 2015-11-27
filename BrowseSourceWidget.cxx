@@ -36,9 +36,6 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   connect(m_sourcesAndOpenFilesWidget, SIGNAL(openSourceCodeFromSearchRequested(QModelIndex)), this, SLOT(openSourceCodeFromSearch(QModelIndex)));
   connect(m_sourcesAndOpenFilesWidget, SIGNAL(openSourceCodeFromOpenDocumentsRequested(QModelIndex)), this, SLOT(openSourceCodeFromOpenDocuments(QModelIndex)));
   connect(m_sourcesAndOpenFilesWidget, SIGNAL(openSourceCodeFromContextualMenuRequested(QModelIndex)), this, SLOT(openSourceCodeFromContextualMenu(QModelIndex)));
-//  connect(m_sourcesAndOpenFilesWidget, SIGNAL(openPreviousSourceRequested(QModelIndex)), this, SLOT(openPreviousSourcesAndNotes(QModelIndex)));
-//  connect(m_sourcesAndOpenFilesWidget, SIGNAL(clearSourceCodeRequested()), this, SLOT(closeSourceAndNotes()));
-//  connect(m_sourcesAndOpenFilesWidget, SIGNAL(clearAllSourceCodeRequested()), this, SLOT(closeAllSourceAndNotes()));
 
   // Main part
   QSplitter* hsplitter = new QSplitter;
@@ -60,6 +57,37 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
 
 QList<QPair<QString, QString>> BrowseSourceWidget::getNotSavedNotes() const {
   return m_browseFileInfo.getNotSavedNotesList();
+}
+
+int BrowseSourceWidget::askToSave(QStringList const& fileNamesList) const {
+  QMessageBox msgBox;
+
+  QString text;
+  if (fileNamesList.size() == 1) {
+    text = "The document "+fileNamesList.first()+" has been modified.";
+    msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::Save);
+  } else {
+    text += "These documents have been modified:\n";
+    for (auto currentFileName: fileNamesList) {
+      text += currentFileName+"\n";
+    }
+    msgBox.setStandardButtons(QMessageBox::SaveAll | QMessageBox::Discard | QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::SaveAll);
+  }
+
+  msgBox.setText(text);
+  msgBox.setInformativeText("Do you want to save your changes?");
+
+  return msgBox.exec();
+}
+
+void BrowseSourceWidget::getNotesListToSaveAndFileNamesList(QStringList& p_absoluteFilePathList, QStringList& p_fileNamesList) const {
+  QList<QPair<QString, QString>> notesListToSave = m_browseFileInfo.getNotSavedNotesList();
+  for (auto currentNotesAndFileNames: notesListToSave) {
+    p_absoluteFilePathList << currentNotesAndFileNames.first;
+    p_fileNamesList << currentNotesAndFileNames.second;
+  }
 }
 
 
@@ -108,15 +136,27 @@ void BrowseSourceWidget::keyReleaseEvent(QKeyEvent* p_event) {
   }
 }
 
-void BrowseSourceWidget::addOrRemoveStarToOpenDocument(bool p_value) {
-  QString absoluteFilePath = m_browseFileInfo.getCurrentOpenDocumentAbsoluteFilePath();
-  QString fileName = m_browseFileInfo.getCurrentOpenDocumentFileName(absoluteFilePath);
+void BrowseSourceWidget::addOrRemoveStarToOpenDocument(bool p_value, QString const& p_absoluteFilePath) {
+  QString absoluteFilePath = p_absoluteFilePath;
+  QString fileName;
+
+  if (p_absoluteFilePath.isEmpty()) {
+    absoluteFilePath = m_browseFileInfo.getCurrentOpenDocumentAbsoluteFilePath();
+    fileName = m_browseFileInfo.getCurrentOpenDocumentFileName(absoluteFilePath);
+  } else {
+    fileName = m_browseFileInfo.getFileNameFromOpenDocumentAbsolutePath(p_absoluteFilePath);
+  }
 
   m_sourcesAndOpenFilesWidget->addOrRemoveStarToOpenDocument(fileName, absoluteFilePath, p_value);
 }
 
 NoteRichTextEdit* BrowseSourceWidget::getNotesTextEditFromPosition(int p_position) const {
-  NoteRichTextEdit* currentNotesTextEdit = dynamic_cast<NoteRichTextEdit*>(m_noteRichTextEditStackWidget->widget(p_position));
+  int position = p_position;
+  if (position == -1) {
+    position = m_noteRichTextEditStackWidget->currentIndex();
+  }
+
+  NoteRichTextEdit* currentNotesTextEdit = dynamic_cast<NoteRichTextEdit*>(m_noteRichTextEditStackWidget->widget(position));
   Q_ASSERT(currentNotesTextEdit != nullptr);
   return currentNotesTextEdit;
 }
@@ -124,30 +164,44 @@ NoteRichTextEdit* BrowseSourceWidget::getNotesTextEditFromPosition(int p_positio
 
 /// PUBLIC SLOTS
 
-void BrowseSourceWidget::saveNotesFromSource(QStringList const& p_notesListToSave) {
-  if (p_notesListToSave.isEmpty()) {
-    saveNotesFromSource(m_browseFileInfo.getCurrentNotesAbsoluteFilePath());
+void BrowseSourceWidget::saveNotesFromSourceAndCloseEditor() {
+  saveNotesFromSource();
+  NoteRichTextEdit* currentNoteRichTextEdit = getNotesTextEditFromPosition();
+  currentNoteRichTextEdit->editOff();
+}
+
+void BrowseSourceWidget::saveAllNotes() {
+  QStringList absoluteFilePathList;
+  QStringList fileNamesList;
+  getNotesListToSaveAndFileNamesList(absoluteFilePathList, fileNamesList);
+  saveNotesFromSource(absoluteFilePathList);
+}
+
+void BrowseSourceWidget::saveNotesFromSource(QStringList const& p_absoluteFilePathListToSave) {
+  if (p_absoluteFilePathListToSave.isEmpty()) {
+    saveNotesFromSource(m_browseFileInfo.getCurrentOpenDocumentAbsoluteFilePath());
   } else {
-    for (auto p_notesAbsoluteFilePath: p_notesListToSave) {
-      saveNotesFromSource(p_notesAbsoluteFilePath);
+    for (auto absoluteFilePath: p_absoluteFilePathListToSave) {
+      saveNotesFromSource(absoluteFilePath);
     }
   }
 }
 
-void BrowseSourceWidget::saveNotesFromSource(QString const& p_notesAbsoluteFilePath) {
-  QFile noteFile(p_notesAbsoluteFilePath);
+void BrowseSourceWidget::saveNotesFromSource(QString const& p_absoluteFilePath) {
+  QString notesAbsoluteFilePath = m_browseFileInfo.getNotesAbsolutePathFromOpenDocumentAbsolutePath(p_absoluteFilePath);
+  QFile noteFile(notesAbsoluteFilePath);
   if (!noteFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
     QMessageBox::warning(this, "Writting issue", noteFile.errorString());
   }
 
   QTextStream in(&noteFile);
 
-  int position = m_browseFileInfo.getNotesPositionInStack(p_notesAbsoluteFilePath);
+  int position = m_browseFileInfo.getNotesPositionInStack(notesAbsoluteFilePath);
   in << getNotesTextEditFromPosition(position)->toHtml();
 
   noteFile.close();
 
-  updateSaveStateToCurrentNotes(false);
+  updateSaveStateToNotes(false, p_absoluteFilePath);
 }
 
 void BrowseSourceWidget::showHorizontal() {
@@ -160,8 +214,7 @@ void BrowseSourceWidget::showVertical() {
   m_noteRichTextEditStackWidget->show();
 }
 
-void BrowseSourceWidget::hideNotesTextEdit()
-{
+void BrowseSourceWidget::hideNotesTextEdit() {
   m_noteRichTextEditStackWidget->hide();
 }
 
@@ -177,7 +230,7 @@ void BrowseSourceWidget::closeNotesAndSource(QString const& p_absoluteFilePath) 
 
     switch (confirm) {
     case QMessageBox::Save: {
-      saveNotesFromSource(notesAbsoluteFilePath);
+      saveNotesFromSource(absoluteFilePath);
       break;
     }
     case QMessageBox::Cancel: {
@@ -212,20 +265,16 @@ void BrowseSourceWidget::closeNotesAndSource(QString const& p_absoluteFilePath) 
 }
 
 void BrowseSourceWidget::closeAllNotesAndSource() {
-  QList<QPair<QString, QString>> notesListToSave = m_browseFileInfo.getNotSavedNotesList();
-  if (notesListToSave.size() > 0) {
-    QStringList notesListAbsoluteFilePath;
-    QStringList fileNamesList;
-    for (auto currentNotesAndFileNames: notesListToSave) {
-      notesListAbsoluteFilePath << currentNotesAndFileNames.first;
-      fileNamesList << currentNotesAndFileNames.second;
-    }
-
+  QStringList absoluteFilePathList;
+  QStringList fileNamesList;
+  getNotesListToSaveAndFileNamesList(absoluteFilePathList, fileNamesList);
+  if (fileNamesList.size() > 0) {
     int confirm = askToSave(fileNamesList);
 
     switch (confirm) {
-    case QMessageBox::Save: {
-      saveNotesFromSource(notesListAbsoluteFilePath);
+    case QMessageBox::Save:
+    case QMessageBox::SaveAll: {
+      saveNotesFromSource(absoluteFilePathList);
       break;
     }
     case QMessageBox::Cancel: {
@@ -304,22 +353,17 @@ void BrowseSourceWidget::openSourceCodeFromContextualMenu(const QModelIndex& p_i
   m_sourcesAndOpenFilesWidget->setCurrentIndex(fileName, absoluteFilePath);
 }
 
-void BrowseSourceWidget::updateSaveStateToCurrentNotes(bool p_value) {
-  m_browseFileInfo.setCurrentNotesSaveState(!p_value);
+void BrowseSourceWidget::updateSaveStateToNotes(bool p_value, QString const& p_absoluteFilePath) {
+  QString absoluteFilePath = p_absoluteFilePath;
+  QString notesAbsoluteFilePath;
 
-  addOrRemoveStarToOpenDocument(p_value);
+  if (absoluteFilePath.isEmpty() == false) {
+    notesAbsoluteFilePath = m_browseFileInfo.getNotesAbsolutePathFromOpenDocumentAbsolutePath(absoluteFilePath);
+  }
+
+  m_browseFileInfo.setNotesSaveState(!p_value, absoluteFilePath);
+  addOrRemoveStarToOpenDocument(p_value, absoluteFilePath);
 }
-
-//void BrowseSourceWidget::openPreviousSourcesAndNotes(const QModelIndex& p_index) {
-//  qDebug() << p_index.data().toString();
-//  qDebug() << p_index.data(Qt::ToolTipRole).toString();
-//  qDebug() << "--";
-
-//  QString fileName = p_index.data(Qt::DisplayRole).toString();
-//  QString absoluteFilePath = p_index.data(Qt::ToolTipRole).toString();
-
-//  openDocumentInEditor(fileName, absoluteFilePath);
-//}
 
 
 /// PRIVATE
@@ -382,32 +426,9 @@ void BrowseSourceWidget::openNotes(QString const& p_notesAbsoluteFilePath) {
 
   connect(notesTextEdit, SIGNAL(contextMenuRequested(QString)), m_sourcesAndOpenFilesWidget, SLOT(openSourceCodeFromFileName(QString)));
   connect(notesTextEdit, SIGNAL(saveNotesRequested()), this, SLOT(saveNotesFromSource()));
-  connect(notesTextEdit, SIGNAL(modificationsNotSaved(bool)), this, SLOT(updateSaveStateToCurrentNotes(bool)));
+  connect(notesTextEdit, SIGNAL(modificationsNotSaved(bool)), this, SLOT(updateSaveStateToNotes(bool)));
 
   int position = m_noteRichTextEditStackWidget->addWidget(notesTextEdit);
   m_noteRichTextEditStackWidget->setCurrentIndex(position);
   m_browseFileInfo.insertNotesAbsoluteFilePath(position, p_notesAbsoluteFilePath);
-}
-
-int BrowseSourceWidget::askToSave(QStringList const& fileNamesList) const {
-  QMessageBox msgBox;
-
-  QString text;
-  if (fileNamesList.size() == 1) {
-    text = "The document "+fileNamesList.first()+" has been modified.";
-    msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-    msgBox.setDefaultButton(QMessageBox::Save);
-  } else {
-    text += "These documents have been modified:\n";
-    for (auto currentFileName: fileNamesList) {
-      text += currentFileName+"\n";
-    }
-    msgBox.setStandardButtons(QMessageBox::SaveAll | QMessageBox::Discard | QMessageBox::Cancel);
-    msgBox.setDefaultButton(QMessageBox::SaveAll);
-  }
-
-  msgBox.setText(text);
-  msgBox.setInformativeText("Do you want to save your changes?");
-
-  return msgBox.exec();
 }

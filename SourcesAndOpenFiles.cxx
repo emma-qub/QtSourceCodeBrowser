@@ -93,14 +93,6 @@ void SourcesAndOpenFiles::openSourceCodeFromFileName(const QString& p_fileName) 
   connect(&contextMenu, SIGNAL(destroyed(QObject*)), this, SLOT(destroyContextualMenu(QObject*)));
 }
 
-//void SourcesAndOpenFiles::openPreviousSource(const QModelIndex& p_currentIndex)
-//{
-//  disconnect(m_openDocumentsView->selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)), this, SLOT(openPreviousSource(QModelIndex)));
-//  if (p_currentIndex.isValid()) {
-//    emit openPreviousSourceRequested(p_currentIndex);
-//  }
-//}
-
 QModelIndex SourcesAndOpenFiles::getCurrentIndex() const {
   return m_openDocumentsView->currentIndex();
 }
@@ -133,22 +125,12 @@ void SourcesAndOpenFiles::clearOpenDocument() {
 }
 
 void SourcesAndOpenFiles::addOrRemoveStarToOpenDocument(QString const& p_fileName, QString const& p_absoluteFilePath, bool p_add) {
-  QModelIndex currentIndex = m_openDocumentsView->currentIndex();
-  QString currentAsoluteFilePath = currentIndex.data(Qt::ToolTipRole).toString();
-  QString currentFileName = currentIndex.data().toString();
-
-  // Text edit was blank before? then there's nothing to do here.
-  if (currentAsoluteFilePath.isEmpty() && currentFileName.isEmpty()) {
+  QModelIndex currentIndex = m_openDocumentsModel->getIndexFromFileNameAndAbsolutePath(p_fileName, p_absoluteFilePath);
+  if (currentIndex.isValid() == false) {
     return;
   }
 
-  qDebug() << currentAsoluteFilePath << currentFileName;
-  qDebug() << p_absoluteFilePath << p_fileName;
-
-  Q_ASSERT(currentAsoluteFilePath == p_absoluteFilePath);
-  Q_ASSERT(currentFileName == p_fileName || currentFileName == p_fileName+"*");
-
-  QString newCurrentOpenDocumentName = m_openDocumentsModel->data(currentIndex).toString();
+  QString newCurrentOpenDocumentName = p_fileName;
   if (p_add && !newCurrentOpenDocumentName.endsWith("*")) {
     newCurrentOpenDocumentName += "*";
   } else if (!p_add && newCurrentOpenDocumentName.endsWith("*")) {
