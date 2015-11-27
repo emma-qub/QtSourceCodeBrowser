@@ -15,6 +15,9 @@ public:
 
   void openSourceCode(QString const& p_content, CodeEditor::FileType p_fileType);
 
+public slots:
+  void clear();
+
 protected slots:
   void fillMethodsComboBox(const QMap<int, QString>& p_methodsAndIndex);
   void goToLine(int p_index);

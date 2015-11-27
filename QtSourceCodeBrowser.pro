@@ -33,4 +33,4 @@ FORMS += \
 QT += \
     widgets \
 
-CONFIG += c++11
+CONFIG += c++14

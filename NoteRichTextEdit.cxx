@@ -50,8 +50,8 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
 
   connect(f_textedit, SIGNAL(currentCharFormatChanged(QTextCharFormat)), this, SLOT(slotCurrentCharFormatChanged(QTextCharFormat)));
   connect(f_textedit, SIGNAL(cursorPositionChanged()), this, SLOT(slotCursorPositionChanged()));
-  connect(f_textedit, SIGNAL(modificationsNotSaved(bool)), this, SIGNAL(modificationsNotSaved(bool)));
-  connect(f_textedit, SIGNAL(editNotesRequested()), f_edit_button, SLOT(click()));
+  connect(f_textedit, SIGNAL(modificationsNotSaved(bool)), this, SLOT(emitModificationsNotSaved(bool)));
+  connect(f_textedit, SIGNAL(editNotesRequested()), this, SLOT(editOn()));
 
   m_fontsize_h1 = 18;
   m_fontsize_h2 = 16;
@@ -67,15 +67,13 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
   connect(f_edit_button, SIGNAL(clicked()), this, SLOT(editOn()));
 
   // Save button
-  //f_save->setFixedSize(22, 24);
   f_save->setIcon(QIcon("../QtSourceCodeBrowser/icons/save.png"));
   f_save->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_S));
-  connect(f_save, SIGNAL(clicked()), this, SLOT(editOff()));
+  connect(f_save, SIGNAL(clicked()), this, SLOT(saveDraft()));
 
   QAction* saveNotesAction = new QAction(this);
   saveNotesAction->setShortcut(QKeySequence::Save);
-  connect(saveNotesAction, SIGNAL(triggered()), this, SIGNAL(saveNotesRequested()));
-  connect(saveNotesAction, SIGNAL(triggered()), this, SLOT(notesHaveBeenSaved()));
+  connect(saveNotesAction, SIGNAL(triggered()), this, SLOT(updateStackIndexAndRequestSaveNotes()));
   f_toolbar->addAction(saveNotesAction);
 
   // paragraph formatting
@@ -181,7 +179,7 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
   // Qt class links
   connect(f_textedit, SIGNAL(transformToLinkRequested(QTextCursor)), this, SLOT(transformTextToInternalLink(QTextCursor)));
   connect(f_textedit, SIGNAL(transformLinkBackRequested()), this, SLOT(transformInternalLinkBack()));
-  connect(f_textedit, SIGNAL(openSourceRequested(QTextCursor)), this, SLOT(openSourceFromPosition(QTextCursor)));
+  connect(f_textedit, SIGNAL(contextMenuRequested(QTextCursor)), this, SLOT(requesContextualMenuFromCursorPosition(QTextCursor)));
 
   // Hide tool bar
   f_toolbar->hide();
@@ -189,6 +187,8 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
   // Mouse tracking
   setMouseTracking(true);
 }
+
+/// PUBLIC
 
 QString NoteRichTextEdit::toPlainText() const {
   return f_textedit->toPlainText();
@@ -216,11 +216,6 @@ void NoteRichTextEdit::setTextCursor(const QTextCursor& p_cursor) {
   f_textedit->setTextCursor(p_cursor);
 }
 
-void NoteRichTextEdit::turnEditOff()
-{
-  editOff(false);
-}
-
 void NoteRichTextEdit::textSource() {
   QDialog* dialog = new QDialog(this);
   QPlainTextEdit* pte = new QPlainTextEdit(dialog);
@@ -236,6 +231,7 @@ void NoteRichTextEdit::textSource() {
 
   delete dialog;
 }
+
 void NoteRichTextEdit::setPlainText(const QString& p_text) {
   f_textedit->setPlainText(p_text);
 }
@@ -546,7 +542,9 @@ void NoteRichTextEdit::indent(int p_delta) {
   cursor.endEditBlock();
 }
 
-void NoteRichTextEdit::setText(const QString& p_text) {
+void NoteRichTextEdit::openNotes(const QString& p_text) {
+  f_textedit->disconnectTextChanged();
+
   if (p_text.isEmpty()) {
     setPlainText(p_text);
     return;
@@ -556,6 +554,8 @@ void NoteRichTextEdit::setText(const QString& p_text) {
   } else {
     setPlainText(p_text);
   }
+
+  f_textedit->connectTextChanged();
 }
 
 void NoteRichTextEdit::insertImage() {
@@ -648,10 +648,10 @@ void NoteRichTextEdit::transformInternalLinkBack() {
   m_previousHtmlSelection.clear();
 }
 
-void NoteRichTextEdit::openSourceFromPosition(QTextCursor const& p_cursor) {
+void NoteRichTextEdit::requesContextualMenuFromCursorPosition(QTextCursor const& p_cursor) {
   QTextCursor copyCursor = p_cursor;
   copyCursor.select(QTextCursor::WordUnderCursor);
-  emit openSourceRequested(copyCursor.selectedText());
+  emit contextMenuRequested(copyCursor.selectedText());
 }
 
 void NoteRichTextEdit::editOn()
@@ -664,18 +664,27 @@ void NoteRichTextEdit::editOn()
   f_textedit->setStyleSheet("background-image: url(\"../QtSourceCodeBrowser/images/draft.png\");");
 }
 
-void NoteRichTextEdit::editOff(bool p_requestSave)
+void NoteRichTextEdit::editOff()
 {
   f_textedit->setReadOnly(true);
   f_textedit->setUndoRedoEnabled(false);
   f_edit_button->show();
   f_toolbar->hide();
-  f_textedit->hasNoModifications();
   f_textedit->viewport()->setCursor(Qt::ArrowCursor);
   f_textedit->setStyleSheet("background-image: none;");
-  if (p_requestSave) {
-    emit saveNotesRequested();
-  }
+}
 
-  emit notesEditOff(false);
+void NoteRichTextEdit::saveDraft() {
+  updateStackIndexAndRequestSaveNotes();
+  editOff();
+}
+
+void NoteRichTextEdit::updateStackIndexAndRequestSaveNotes() {
+  emit saveNotesRequested();
+}
+
+void NoteRichTextEdit::emitModificationsNotSaved(bool p_saved) {
+  if (!f_textedit->isReadOnly()) {
+    emit modificationsNotSaved(p_saved);
+  }
 }

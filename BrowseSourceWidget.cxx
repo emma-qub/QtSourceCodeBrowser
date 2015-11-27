@@ -13,60 +13,36 @@
 #include "CodeEditor.hxx"
 
 BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
-  QWidget(p_parent),
-  m_notesExist(false),
-  m_notesFileInfo(),
-  m_notesFilePath(),
-  m_currentOpenDocumentIndex() {
+  QWidget(p_parent) {
 
   // Sources and open files
-  m_sourcesAndOpenFiles = new SourcesAndOpenFiles(this);
+  m_sourcesAndOpenFilesWidget = new SourcesAndOpenFiles(this);
 
   // Source editor
-  m_sourcesEditor = new SourceCodeEditor(this);
+  m_sourceCodeEditorWidget = new SourceCodeEditor(this);
 
   // Note Text Edit
-  m_notesTextEdit = new NoteRichTextEdit(this);
-  connect(m_notesTextEdit, SIGNAL(openSourceRequested(QString)), m_sourcesAndOpenFiles, SLOT(openSourceCodeFromFileName(QString)));
-  connect(m_notesTextEdit, SIGNAL(saveNotesRequested()), this, SLOT(saveNotesFromSource()));
-  connect(m_notesTextEdit, SIGNAL(modificationsNotSaved(bool)), m_sourcesAndOpenFiles, SLOT(addOrRemoveStarToOpenDocument(bool)));
-  connect(m_notesTextEdit, SIGNAL(notesEditOff(bool)), m_sourcesAndOpenFiles, SLOT(addOrRemoveStarToOpenDocument(bool)));
-
-  // Edit Notes ON horizontal
-  m_editNotesOnHorizontalAction = new QAction(this);
-  m_editNotesOnHorizontalAction->setShortcut(QKeySequence("CTRL+E,3"));
-  addAction(m_editNotesOnHorizontalAction);
-  connect(m_editNotesOnHorizontalAction, SIGNAL(triggered()), this, SLOT(showHorizontal()));
-  m_editNotesOnHorizontalAction->setEnabled(false);
-
-  // Edit Notes ON vertical
-  m_editNotesOnVerticalAction = new QAction(this);
-  m_editNotesOnVerticalAction->setShortcut(QKeySequence("CTRL+E,2"));
-  addAction(m_editNotesOnVerticalAction);
-  connect(m_editNotesOnVerticalAction, SIGNAL(triggered()), this, SLOT(showVertical()));
-  m_editNotesOnVerticalAction->setEnabled(false);
-
-  // Edit Notes OFF
-  m_editNotesOffAction = new QAction(this);
-  m_editNotesOffAction->setShortcut(QKeySequence("CTRL+E,1"));
-  addAction(m_editNotesOffAction);
-  connect(m_editNotesOffAction, SIGNAL(triggered()), this, SLOT(hideNotesTextEdit()));
-  m_editNotesOffAction->setEnabled(false);
+  m_noteRichTextEditStackWidget = new QStackedWidget(this);
 
   // Sources and Notes Splitter
   m_sourcesNotesSplitter = new QSplitter;
-  m_sourcesNotesSplitter->addWidget(m_sourcesEditor);
-  m_sourcesNotesSplitter->addWidget(m_notesTextEdit);
+  m_sourcesNotesSplitter->addWidget(m_sourceCodeEditorWidget);
+  m_sourcesNotesSplitter->addWidget(m_noteRichTextEditStackWidget);
   m_sourcesNotesSplitter->setStretchFactor(0, 1);
   m_sourcesNotesSplitter->setStretchFactor(1, 2);
-  m_notesTextEdit->hide();
+  m_noteRichTextEditStackWidget->hide();
 
-  connect(m_sourcesAndOpenFiles, SIGNAL(openSourceCodeRequested(QModelIndex)), this, SLOT(openSourceCode(QModelIndex)));
-  connect(m_sourcesAndOpenFiles, SIGNAL(openSourceCodeFromOpenDocumentsRequested(QModelIndex)), this, SLOT(openSourceCodeFromOpenDocuments(QModelIndex)));
+  connect(m_sourcesAndOpenFilesWidget, SIGNAL(openSourceCodeFromTreeViewRequested(QModelIndex)), this, SLOT(openSourceCodeFromTreeView(QModelIndex)));
+  connect(m_sourcesAndOpenFilesWidget, SIGNAL(openSourceCodeFromSearchRequested(QModelIndex)), this, SLOT(openSourceCodeFromSearch(QModelIndex)));
+  connect(m_sourcesAndOpenFilesWidget, SIGNAL(openSourceCodeFromOpenDocumentsRequested(QModelIndex)), this, SLOT(openSourceCodeFromOpenDocuments(QModelIndex)));
+  connect(m_sourcesAndOpenFilesWidget, SIGNAL(openSourceCodeFromContextualMenuRequested(QModelIndex)), this, SLOT(openSourceCodeFromContextualMenu(QModelIndex)));
+//  connect(m_sourcesAndOpenFilesWidget, SIGNAL(openPreviousSourceRequested(QModelIndex)), this, SLOT(openPreviousSourcesAndNotes(QModelIndex)));
+//  connect(m_sourcesAndOpenFilesWidget, SIGNAL(clearSourceCodeRequested()), this, SLOT(closeSourceAndNotes()));
+//  connect(m_sourcesAndOpenFilesWidget, SIGNAL(clearAllSourceCodeRequested()), this, SLOT(closeAllSourceAndNotes()));
 
   // Main part
   QSplitter* hsplitter = new QSplitter;
-  hsplitter->addWidget(m_sourcesAndOpenFiles);
+  hsplitter->addWidget(m_sourcesAndOpenFilesWidget);
   hsplitter->addWidget(m_sourcesNotesSplitter);
   hsplitter->setStretchFactor(0, 0);
   hsplitter->setStretchFactor(1, 1);
@@ -82,8 +58,15 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   layout()->setContentsMargins(0, 0, 0, 0);
 }
 
+QList<QPair<QString, QString>> BrowseSourceWidget::getNotSavedNotes() const {
+  return m_browseFileInfo.getNotSavedNotesList();
+}
+
+
+/// PROTECTED
+
 void BrowseSourceWidget::keyReleaseEvent(QKeyEvent* p_event) {
-  QString currentSourceOpen = m_sourcesAndOpenFiles->getCurrentOpenDocumentAbsolutePath();
+  QString currentSourceOpen = m_sourcesAndOpenFilesWidget->getCurrentOpenDocumentAbsolutePath();
   if (currentSourceOpen.isEmpty())
     return;
 
@@ -125,72 +108,79 @@ void BrowseSourceWidget::keyReleaseEvent(QKeyEvent* p_event) {
   }
 }
 
-void BrowseSourceWidget::openSourceCode(QModelIndex const& p_index) {
-  QString fileName(p_index.data().toString());
-  if (fileName.endsWith(".cpp") || fileName.endsWith(".h")) {
-    QString absoluteFilePath(fileName);
-    QModelIndex currentIndex = p_index;
-    QModelIndex parentIndex;
-    while ((parentIndex = currentIndex.parent()) != QModelIndex()) {
-      QString parentDirectoryName = parentIndex.data().toString();
-      if (parentDirectoryName == QString(QDir::separator())) {
-        absoluteFilePath = QDir::separator() + absoluteFilePath;
-        break;
-      }
+void BrowseSourceWidget::addOrRemoveStarToOpenDocument(bool p_value) {
+  QString absoluteFilePath = m_browseFileInfo.getCurrentOpenDocumentAbsoluteFilePath();
+  QString fileName = m_browseFileInfo.getCurrentOpenDocumentFileName(absoluteFilePath);
 
-      absoluteFilePath = parentDirectoryName + QDir::separator() + absoluteFilePath;
-      currentIndex = parentIndex;
+  m_sourcesAndOpenFilesWidget->addOrRemoveStarToOpenDocument(fileName, absoluteFilePath, p_value);
+}
+
+NoteRichTextEdit* BrowseSourceWidget::getNotesTextEditFromPosition(int p_position) const {
+  NoteRichTextEdit* currentNotesTextEdit = dynamic_cast<NoteRichTextEdit*>(m_noteRichTextEditStackWidget->widget(p_position));
+  Q_ASSERT(currentNotesTextEdit != nullptr);
+  return currentNotesTextEdit;
+}
+
+
+/// PUBLIC SLOTS
+
+void BrowseSourceWidget::saveNotesFromSource(QStringList const& p_notesListToSave) {
+  if (p_notesListToSave.isEmpty()) {
+    saveNotesFromSource(m_browseFileInfo.getCurrentNotesAbsoluteFilePath());
+  } else {
+    for (auto p_notesAbsoluteFilePath: p_notesListToSave) {
+      saveNotesFromSource(p_notesAbsoluteFilePath);
     }
-
-    openDocumentInEditor(fileName, absoluteFilePath);
   }
+}
+
+void BrowseSourceWidget::saveNotesFromSource(QString const& p_notesAbsoluteFilePath) {
+  QFile noteFile(p_notesAbsoluteFilePath);
+  if (!noteFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    QMessageBox::warning(this, "Writting issue", noteFile.errorString());
+  }
+
+  QTextStream in(&noteFile);
+
+  int position = m_browseFileInfo.getNotesPositionInStack(p_notesAbsoluteFilePath);
+  in << getNotesTextEditFromPosition(position)->toHtml();
+
+  noteFile.close();
+
+  updateSaveStateToCurrentNotes(false);
 }
 
 void BrowseSourceWidget::showHorizontal() {
   m_sourcesNotesSplitter->setOrientation(Qt::Horizontal);
-  m_notesTextEdit->show();
-  m_editNotesOffAction->setEnabled(true);
-  m_editNotesOnHorizontalAction->setEnabled(false);
-  m_editNotesOnVerticalAction->setEnabled(true);
+  m_noteRichTextEditStackWidget->show();
 }
 
 void BrowseSourceWidget::showVertical() {
   m_sourcesNotesSplitter->setOrientation(Qt::Vertical);
-  m_notesTextEdit->show();
-  m_editNotesOffAction->setEnabled(true);
-  m_editNotesOnHorizontalAction->setEnabled(true);
-  m_editNotesOnVerticalAction->setEnabled(false);
+  m_noteRichTextEditStackWidget->show();
 }
 
 void BrowseSourceWidget::hideNotesTextEdit()
 {
-  m_notesTextEdit->hide();
-  m_editNotesOffAction->setEnabled(false);
-  m_editNotesOnHorizontalAction->setEnabled(true);
-  m_editNotesOnVerticalAction->setEnabled(true);
+  m_noteRichTextEditStackWidget->hide();
 }
 
-void BrowseSourceWidget::openSourceCodeFromOpenDocuments(QModelIndex const& p_index) {
-  QString fileName = p_index.data(Qt::DisplayRole).toString();
-  QString absoluteFilePath = p_index.data(Qt::ToolTipRole).toString();
-  openDocumentInEditor(fileName, absoluteFilePath);
-}
+void BrowseSourceWidget::closeNotesAndSource(QString const& p_absoluteFilePath) {
+  QString absoluteFilePath = p_absoluteFilePath;
+  if (absoluteFilePath.isEmpty()) {
+    absoluteFilePath = m_browseFileInfo.getCurrentOpenDocumentAbsoluteFilePath();
+  }
+  QString notesAbsoluteFilePath = m_browseFileInfo.getNotesAbsolutePathFromOpenDocumentAbsolutePath(absoluteFilePath);
 
-void BrowseSourceWidget::openDocumentInEditor(QString const& p_fileName, QString const& p_absoluteFilePath) {
-  if (m_notesTextEdit->hasModificationsNotSaved()) {
-    QMessageBox msgBox;
-    msgBox.setText("The document has been modified.");
-    msgBox.setInformativeText("Do you want to save your changes?");
-    msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-    msgBox.setDefaultButton(QMessageBox::Save);
-    int ret = msgBox.exec();
-    switch (ret) {
+  if (m_browseFileInfo.isNotesSaved(absoluteFilePath) == false) {
+    int confirm = askToSave(QStringList() << m_browseFileInfo.getCurrentOpenDocumentFileName(absoluteFilePath));
+
+    switch (confirm) {
     case QMessageBox::Save: {
-      saveNotesFromSource();
+      saveNotesFromSource(notesAbsoluteFilePath);
       break;
     }
     case QMessageBox::Cancel: {
-      m_sourcesAndOpenFiles->setCurrentIndex(m_currentOpenDocumentIndex);
       return;
     }
     case QMessageBox::Discard:
@@ -200,35 +190,141 @@ void BrowseSourceWidget::openDocumentInEditor(QString const& p_fileName, QString
     }
   }
 
-  m_notesTextEdit->turnEditOff();
+  // Remove Notes
+  int currentNotesPosition = m_browseFileInfo.getNotesPositionInStack(notesAbsoluteFilePath);
+  m_noteRichTextEditStackWidget->removeWidget(m_noteRichTextEditStackWidget->widget(currentNotesPosition));
+  m_browseFileInfo.removeNotesAt(currentNotesPosition);
 
-  QFile sourceFile(p_absoluteFilePath);
-  if (!sourceFile.exists()) {
-    qDebug() << "404 Not Found" << "The file\n"+p_absoluteFilePath+"\ndoes not exist on this computer.";
-    return;
-  }
+  // Remove Source
+  m_sourceCodeEditorWidget->clear();
+  m_browseFileInfo.removeSourceFromAbsoluteFilePath(absoluteFilePath);
 
-  CodeEditor::FileType fileType;
-  if (p_fileName.endsWith("_p.h")) {
-    fileType = CodeEditor::ePrivateH;
-  } else if (p_fileName.endsWith(".h")) {
-    fileType = CodeEditor::eH;
-  } else if (p_fileName.endsWith(".cpp")) {
-    fileType = CodeEditor::eCpp;
+  // Remove Open Document
+  m_sourcesAndOpenFilesWidget->removeOpenDocument(absoluteFilePath);
+
+  // Open current Document
+  QModelIndex currentIndex = m_sourcesAndOpenFilesWidget->getCurrentIndex();
+  if (currentIndex.isValid()) {
+    openSourceCodeFromOpenDocuments(currentIndex);
   } else {
-    fileType = CodeEditor::eOtherFile;
+    emit disableSplitRequested();
   }
-
-  m_sourcesAndOpenFiles->insertDocument(p_fileName, p_absoluteFilePath);
-  m_sourcesEditor->openSourceCode(getSourceContent(p_absoluteFilePath), fileType);
-  QModelIndex openIndex = m_sourcesAndOpenFiles->getCurrentOpenDocumentIndex(p_fileName, p_absoluteFilePath);
-  m_currentOpenDocumentIndex = openIndex;
-  m_sourcesAndOpenFiles->setCurrentIndex(openIndex);
-
-  openNotesFromSource(p_fileName);
 }
 
-QString BrowseSourceWidget::getSourceContent(QString const& p_absoluteFilePath) {
+void BrowseSourceWidget::closeAllNotesAndSource() {
+  QList<QPair<QString, QString>> notesListToSave = m_browseFileInfo.getNotSavedNotesList();
+  if (notesListToSave.size() > 0) {
+    QStringList notesListAbsoluteFilePath;
+    QStringList fileNamesList;
+    for (auto currentNotesAndFileNames: notesListToSave) {
+      notesListAbsoluteFilePath << currentNotesAndFileNames.first;
+      fileNamesList << currentNotesAndFileNames.second;
+    }
+
+    int confirm = askToSave(fileNamesList);
+
+    switch (confirm) {
+    case QMessageBox::Save: {
+      saveNotesFromSource(notesListAbsoluteFilePath);
+      break;
+    }
+    case QMessageBox::Cancel: {
+      return;
+    }
+    case QMessageBox::Discard:
+    default: {
+      break;
+    }
+    }
+  }
+
+  // Remove Notes
+  QWidget* currentWidget = nullptr;
+  while ((currentWidget = m_noteRichTextEditStackWidget->widget(0)) != nullptr) {
+    m_noteRichTextEditStackWidget->removeWidget(currentWidget);
+    m_browseFileInfo.clearNotes();
+  }
+
+  // Remove Source
+  m_sourceCodeEditorWidget->clear();
+  m_browseFileInfo.clearSourceFromAbsoluteFilePath();
+
+  // Remove Open Document
+  m_sourcesAndOpenFilesWidget->clearOpenDocument();
+
+  // Disable Split
+  emit disableSplitRequested();
+}
+
+
+/// PROTECTED SLOTS
+
+void BrowseSourceWidget::openSourceCodeFromTreeView(QModelIndex const& p_index) {
+  QFileSystemModel const* model = dynamic_cast<QFileSystemModel const*>(p_index.model());
+  Q_ASSERT(model != nullptr);
+
+  QString fileName = model->fileName(p_index);
+  QString absoluteFilePath = model->filePath(p_index);
+
+  m_browseFileInfo.appendNotesAndOpenDocument(absoluteFilePath, fileName);
+
+  openDocumentInEditor(fileName, absoluteFilePath);
+
+  m_sourcesAndOpenFilesWidget->setCurrentIndex(fileName, absoluteFilePath);
+}
+
+void BrowseSourceWidget::openSourceCodeFromSearch(QModelIndex const& p_index) {
+  QString fileName = p_index.data(Qt::DisplayRole).toString();
+  QString absoluteFilePath = p_index.data(Qt::ToolTipRole).toString();
+
+  m_browseFileInfo.appendNotesAndOpenDocument(absoluteFilePath, fileName);
+
+  openDocumentInEditor(fileName, absoluteFilePath);
+
+  m_sourcesAndOpenFilesWidget->setCurrentIndex(fileName, absoluteFilePath);
+}
+
+void BrowseSourceWidget::openSourceCodeFromOpenDocuments(QModelIndex const& p_index) {
+  QString fileName = p_index.data(Qt::DisplayRole).toString();
+  QString absoluteFilePath = p_index.data(Qt::ToolTipRole).toString();
+
+  m_browseFileInfo.setCurrentNotesAndSourceAbsoluteFilePath(absoluteFilePath);
+
+  openDocumentInEditor(fileName, absoluteFilePath);
+}
+
+void BrowseSourceWidget::openSourceCodeFromContextualMenu(const QModelIndex& p_index) {
+  QString fileName = p_index.data(Qt::DisplayRole).toString();
+  QString absoluteFilePath = p_index.data(Qt::ToolTipRole).toString();
+
+  m_browseFileInfo.appendNotesAndOpenDocument(absoluteFilePath, fileName);
+
+  openDocumentInEditor(fileName, absoluteFilePath);
+
+  m_sourcesAndOpenFilesWidget->setCurrentIndex(fileName, absoluteFilePath);
+}
+
+void BrowseSourceWidget::updateSaveStateToCurrentNotes(bool p_value) {
+  m_browseFileInfo.setCurrentNotesSaveState(!p_value);
+
+  addOrRemoveStarToOpenDocument(p_value);
+}
+
+//void BrowseSourceWidget::openPreviousSourcesAndNotes(const QModelIndex& p_index) {
+//  qDebug() << p_index.data().toString();
+//  qDebug() << p_index.data(Qt::ToolTipRole).toString();
+//  qDebug() << "--";
+
+//  QString fileName = p_index.data(Qt::DisplayRole).toString();
+//  QString absoluteFilePath = p_index.data(Qt::ToolTipRole).toString();
+
+//  openDocumentInEditor(fileName, absoluteFilePath);
+//}
+
+
+/// PRIVATE
+
+QString BrowseSourceWidget::getFileContent(QString const& p_absoluteFilePath) {
   QFile sourceFile(p_absoluteFilePath);
   if (!sourceFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
     QMessageBox::warning(this, "Opening issue", sourceFile.errorString());
@@ -247,49 +343,71 @@ QString BrowseSourceWidget::getSourceContent(QString const& p_absoluteFilePath) 
   return content;
 }
 
-void BrowseSourceWidget::saveNotesFromSource()
-{
-  if (m_notesFilePath.isEmpty()) {
+void BrowseSourceWidget::openDocumentInEditor(QString const& p_fileName, QString const& p_absoluteFilePath) {
+  QFile sourceFile(p_absoluteFilePath);
+  if (!sourceFile.exists()) {
+    qDebug() << "404 Not Found" << "The file\n"+p_absoluteFilePath+"\ndoes not exist on this computer.";
     return;
   }
 
-  QFile noteFile(m_notesFilePath);
-  if (!noteFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-    QMessageBox::warning(this, "Writting issue", noteFile.errorString());
+  CodeEditor::FileType fileType;
+  if (p_fileName.endsWith("_p.h")) {
+    fileType = CodeEditor::ePrivateH;
+  } else if (p_fileName.endsWith(".h")) {
+    fileType = CodeEditor::eH;
+  } else if (p_fileName.endsWith(".cpp")) {
+    fileType = CodeEditor::eCpp;
+  } else {
+    fileType = CodeEditor::eOtherFile;
   }
 
-  QTextStream in(&noteFile);
+  QString notesAbsoluteFilePath = m_browseFileInfo.getCurrentNotesAbsoluteFilePath();
 
-  in << m_notesTextEdit->toHtml();
+  m_sourcesAndOpenFilesWidget->insertDocument(p_fileName, p_absoluteFilePath);
+  m_sourceCodeEditorWidget->openSourceCode(getFileContent(p_absoluteFilePath), fileType);
 
-  noteFile.close();
+  int position = m_browseFileInfo.getNotesPositionInStack(notesAbsoluteFilePath);
+  if (position > -1) {
+    m_noteRichTextEditStackWidget->setCurrentIndex(position);
+  } else {
+    openNotes(notesAbsoluteFilePath);
+  }
 
-  m_sourcesAndOpenFiles->addOrRemoveStarToOpenDocument(false);
+  emit enableSplitRequested();
 }
 
-void BrowseSourceWidget::getNotesFileInfo(QString const& p_fileName) {
-  QString notesFileName = p_fileName;
-  notesFileName.replace(QRegExp("(\\.cpp$|\\.h$|_p\\.h$)"), ".txt");
+void BrowseSourceWidget::openNotes(QString const& p_notesAbsoluteFilePath) {
+  NoteRichTextEdit* notesTextEdit = new NoteRichTextEdit;
+  notesTextEdit->openNotes(getFileContent(p_notesAbsoluteFilePath));
 
-  m_notesFileInfo = QFileInfo("../QtSourceCodeBrowser/notes/"+notesFileName);
-  m_notesFilePath = m_notesFileInfo.absoluteFilePath();
+  connect(notesTextEdit, SIGNAL(contextMenuRequested(QString)), m_sourcesAndOpenFilesWidget, SLOT(openSourceCodeFromFileName(QString)));
+  connect(notesTextEdit, SIGNAL(saveNotesRequested()), this, SLOT(saveNotesFromSource()));
+  connect(notesTextEdit, SIGNAL(modificationsNotSaved(bool)), this, SLOT(updateSaveStateToCurrentNotes(bool)));
+
+  int position = m_noteRichTextEditStackWidget->addWidget(notesTextEdit);
+  m_noteRichTextEditStackWidget->setCurrentIndex(position);
+  m_browseFileInfo.insertNotesAbsoluteFilePath(position, p_notesAbsoluteFilePath);
 }
 
-void BrowseSourceWidget::openNotesFromSource(QString const& p_fileName) {
-  QFileInfo previousFileInfo = m_notesFileInfo;
-  getNotesFileInfo(p_fileName);
+int BrowseSourceWidget::askToSave(QStringList const& fileNamesList) const {
+  QMessageBox msgBox;
 
-  if (previousFileInfo == m_notesFileInfo) {
-    return;
+  QString text;
+  if (fileNamesList.size() == 1) {
+    text = "The document "+fileNamesList.first()+" has been modified.";
+    msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::Save);
+  } else {
+    text += "These documents have been modified:\n";
+    for (auto currentFileName: fileNamesList) {
+      text += currentFileName+"\n";
+    }
+    msgBox.setStandardButtons(QMessageBox::SaveAll | QMessageBox::Discard | QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::SaveAll);
   }
 
-  m_notesTextEdit->setText("");
+  msgBox.setText(text);
+  msgBox.setInformativeText("Do you want to save your changes?");
 
-  m_notesExist = m_notesFileInfo.exists();
-  if (m_notesExist) {
-    m_notesTextEdit->setText(getSourceContent(m_notesFilePath));
-  }
-
-  m_editNotesOnHorizontalAction->setEnabled(true);
-  m_editNotesOnVerticalAction->setEnabled(true);
+  return msgBox.exec();
 }

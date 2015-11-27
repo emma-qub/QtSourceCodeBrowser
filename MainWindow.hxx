@@ -14,8 +14,19 @@ public:
 protected:
   void closeEvent(QCloseEvent* p_event) override;
 
+protected slots:
+  void showHorizontal();
+  void showVertical();
+  void hideNotesTextEdit();
+  void enableSplit();
+  void disableSplit();
+
 private:
   BrowseSourceWidget* m_centralWidget;
+
+  QAction* m_editNotesOnHorizontalAction;
+  QAction* m_editNotesOnVerticalAction;
+  QAction* m_editNotesOffAction;
 };
 
 #endif // MAINWINDOW_HXX

@@ -99,7 +99,8 @@
          <string/>
         </property>
         <property name="icon">
-         <iconset theme="save"/>
+         <iconset theme="save">
+          <normaloff>.</normaloff>.</iconset>
         </property>
        </widget>
       </item>

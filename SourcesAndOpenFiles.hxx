@@ -22,16 +22,19 @@ public:
   explicit SourcesAndOpenFiles(QWidget* p_parent = nullptr);
 
   void setSearchLineEditText(QString const& p_text) { m_searchLineEdit->setText(p_text); }
-  void setCurrentIndex(QModelIndex const& p_index);
+  QModelIndex getCurrentIndex() const;
+  void setCurrentIndex(QString const& p_fileName, QString const& p_absoluteFilePath);
   QString getCurrentOpenDocumentAbsolutePath() const;
   void insertDocument(QString const& p_fileName, QString const& p_absoluteFilePath);
-  QModelIndex getCurrentOpenDocumentIndex(QString const& p_fileName, QString const& p_absoluteFilePath);
+  void removeOpenDocument(QString const& p_absoluteFilePath);
+  void clearOpenDocument();
 
 public slots:
-  void addOrRemoveStarToOpenDocument(bool p_add);
-  void openSourceCodeFromFileName(const QString& p_fileName);
+  void addOrRemoveStarToOpenDocument(QString const& p_fileName, QString const& p_absoluteFilePath, bool p_add);
+  void openSourceCodeFromFileName(QString const& p_fileName);
 
 protected slots:
+  //void openPreviousSource(QModelIndex const& p_currentIndex);
   void searchFiles(QString const& p_fileName);
   void sortOpenDocuments(QModelIndex, int, int);
   void destroyContextualMenu(QObject* p_object);
@@ -39,8 +42,13 @@ protected slots:
   void expandTreeView(QModelIndex const& p_index);
 
 signals:
-  void openSourceCodeRequested(QModelIndex);
+  void openSourceCodeFromTreeViewRequested(QModelIndex);
+  void openSourceCodeFromSearchRequested(QModelIndex);
   void openSourceCodeFromOpenDocumentsRequested(QModelIndex);
+  void openSourceCodeFromContextualMenuRequested(QModelIndex);
+  //void openPreviousSourceRequested(QModelIndex);
+  //void clearSourceCodeRequested();
+  //void clearAllSourceCodeRequested();
 
 private:
   void fillSourceModelFromSettingsDirectory(QString const& p_directoryName);
@@ -56,9 +64,10 @@ private:
   QString m_rootDirectoryName;
 
   OpenDocumentsModel* m_openDocumentsModel;
-  QSortFilterProxyModel* m_openDocumentsProxyModel;
 
   QMap<QAction*, QModelIndex> m_actionSourcesMap;
+
+  QString m_previousAbsolutePath;
 };
 
 #endif // SOURCESANDOPENFILES_HXX

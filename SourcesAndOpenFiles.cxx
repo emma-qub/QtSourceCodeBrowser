@@ -38,7 +38,8 @@ SourcesAndOpenFiles::SourcesAndOpenFiles(QWidget* p_parent):
   m_sourcesTreeView->setRootIndex(m_sourceRootIndex);
   m_sourcesTreeView->resizeColumnToContents(0);
   m_sourcesTreeView->setHeaderHidden(true);
-  connect(m_sourcesTreeView, SIGNAL(doubleClicked(QModelIndex)), this, SIGNAL(openSourceCodeRequested(QModelIndex)));
+  connect(m_sourcesTreeView, SIGNAL(doubleClicked(QModelIndex)), this, SIGNAL(openSourceCodeFromTreeViewRequested(QModelIndex)));
+  connect(m_sourcesTreeView, SIGNAL(activated(QModelIndex)), this, SIGNAL(openSourceCodeFromTreeViewRequested(QModelIndex)));
 
   // Source Search Model
   m_sourceSearchModel = new OpenDocumentsModel(this);
@@ -50,8 +51,9 @@ SourcesAndOpenFiles::SourcesAndOpenFiles(QWidget* p_parent):
 
   // Source Search List View
   m_sourceSearchView->setModel(m_proxyModel);
-  connect(m_sourceSearchView, SIGNAL(clicked(QModelIndex)), this, SIGNAL(openSourceCodeFromOpenDocumentsRequested(QModelIndex)));
+  connect(m_sourceSearchView, SIGNAL(clicked(QModelIndex)), this, SIGNAL(openSourceCodeFromSearchRequested(QModelIndex)));
   connect(m_sourceSearchView, SIGNAL(clicked(QModelIndex)), this, SLOT(expandTreeView(QModelIndex)));
+  connect(m_openDocumentsView, SIGNAL(clicked(QModelIndex)), this, SLOT(expandTreeView(QModelIndex)));
 
   // Show only first column
   for (int k = 1; k < m_sourceModel->columnCount(); ++k)
@@ -59,12 +61,10 @@ SourcesAndOpenFiles::SourcesAndOpenFiles(QWidget* p_parent):
 
   //Open documents model
   m_openDocumentsModel = new OpenDocumentsModel;
-  m_openDocumentsProxyModel = new QSortFilterProxyModel;
-  m_openDocumentsProxyModel->setSourceModel(m_openDocumentsModel);
-  connect(m_openDocumentsModel, SIGNAL(rowsInserted(QModelIndex,int,int)), this, SLOT(sortOpenDocuments(QModelIndex,int,int)));
+  ///connect(m_openDocumentsModel, SIGNAL(rowsInserted(QModelIndex,int,int)), this, SLOT(sortOpenDocuments(QModelIndex,int,int)));
 
   // Open documents view
-  m_openDocumentsView->setModel(m_openDocumentsProxyModel);
+  m_openDocumentsView->setModel(m_openDocumentsModel);
   connect(m_openDocumentsView, SIGNAL(clicked(QModelIndex)), this, SIGNAL(openSourceCodeFromOpenDocumentsRequested(QModelIndex)));
 
   // Splitter
@@ -93,36 +93,68 @@ void SourcesAndOpenFiles::openSourceCodeFromFileName(const QString& p_fileName) 
   connect(&contextMenu, SIGNAL(destroyed(QObject*)), this, SLOT(destroyContextualMenu(QObject*)));
 }
 
-void SourcesAndOpenFiles::setCurrentIndex(QModelIndex const& p_index)
-{
-  m_openDocumentsView->setCurrentIndex(p_index);
+//void SourcesAndOpenFiles::openPreviousSource(const QModelIndex& p_currentIndex)
+//{
+//  disconnect(m_openDocumentsView->selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)), this, SLOT(openPreviousSource(QModelIndex)));
+//  if (p_currentIndex.isValid()) {
+//    emit openPreviousSourceRequested(p_currentIndex);
+//  }
+//}
+
+QModelIndex SourcesAndOpenFiles::getCurrentIndex() const {
+  return m_openDocumentsView->currentIndex();
 }
 
-QString SourcesAndOpenFiles::getCurrentOpenDocumentAbsolutePath() const
-{
+void SourcesAndOpenFiles::setCurrentIndex(const QString& p_fileName, const QString& p_absoluteFilePath) {
+  for (int k = 0; k < m_openDocumentsModel->rowCount(); ++k) {
+    QModelIndex currentIndex = m_openDocumentsModel->index(k, 0);
+    if ((currentIndex.data() == p_fileName || currentIndex.data() == p_fileName+"*")
+      && currentIndex.data(Qt::ToolTipRole) == p_absoluteFilePath) {
+      m_openDocumentsView->setCurrentIndex(currentIndex);
+      return;
+    }
+  }
+}
+
+QString SourcesAndOpenFiles::getCurrentOpenDocumentAbsolutePath() const {
   return m_openDocumentsView->currentIndex().data(Qt::ToolTipRole).toString();
 }
 
-void SourcesAndOpenFiles::insertDocument(const QString& p_fileName, const QString& p_absoluteFilePath)
-{
+void SourcesAndOpenFiles::insertDocument(const QString& p_fileName, const QString& p_absoluteFilePath) {
   m_openDocumentsModel->insertDocument(p_fileName, p_absoluteFilePath);
 }
 
-QModelIndex SourcesAndOpenFiles::getCurrentOpenDocumentIndex(const QString& p_fileName, const QString& p_absoluteFilePath)
-{
-  return m_openDocumentsProxyModel->mapFromSource(m_openDocumentsModel->indexFromFile(p_fileName, p_absoluteFilePath));
+void SourcesAndOpenFiles::removeOpenDocument(QString const& p_absoluteFilePath) {
+  m_openDocumentsModel->closeOpenDocument(p_absoluteFilePath);
 }
 
-void SourcesAndOpenFiles::addOrRemoveStarToOpenDocument(bool p_add)
-{
-  QModelIndex currentOpenDocumentIndex = m_openDocumentsProxyModel->mapToSource(m_openDocumentsView->currentIndex());
-  QString newCurrentOpenDocumentName = m_openDocumentsModel->data(currentOpenDocumentIndex).toString();
+void SourcesAndOpenFiles::clearOpenDocument() {
+  m_openDocumentsModel->closeAllOpenDocument();
+}
+
+void SourcesAndOpenFiles::addOrRemoveStarToOpenDocument(QString const& p_fileName, QString const& p_absoluteFilePath, bool p_add) {
+  QModelIndex currentIndex = m_openDocumentsView->currentIndex();
+  QString currentAsoluteFilePath = currentIndex.data(Qt::ToolTipRole).toString();
+  QString currentFileName = currentIndex.data().toString();
+
+  // Text edit was blank before? then there's nothing to do here.
+  if (currentAsoluteFilePath.isEmpty() && currentFileName.isEmpty()) {
+    return;
+  }
+
+  qDebug() << currentAsoluteFilePath << currentFileName;
+  qDebug() << p_absoluteFilePath << p_fileName;
+
+  Q_ASSERT(currentAsoluteFilePath == p_absoluteFilePath);
+  Q_ASSERT(currentFileName == p_fileName || currentFileName == p_fileName+"*");
+
+  QString newCurrentOpenDocumentName = m_openDocumentsModel->data(currentIndex).toString();
   if (p_add && !newCurrentOpenDocumentName.endsWith("*")) {
     newCurrentOpenDocumentName += "*";
   } else if (!p_add && newCurrentOpenDocumentName.endsWith("*")) {
     newCurrentOpenDocumentName.remove(newCurrentOpenDocumentName.size()-1, 1);
   }
-  m_openDocumentsModel->setData(currentOpenDocumentIndex, newCurrentOpenDocumentName);
+  m_openDocumentsModel->setData(currentIndex, newCurrentOpenDocumentName);
 }
 
 void SourcesAndOpenFiles::searchFiles(QString const& p_fileName) {
@@ -136,7 +168,7 @@ void SourcesAndOpenFiles::searchFiles(QString const& p_fileName) {
 }
 
 void SourcesAndOpenFiles::sortOpenDocuments(QModelIndex, int, int) {
-  m_openDocumentsProxyModel->sort(0);
+  m_openDocumentsModel->sort(0);
 }
 
 void SourcesAndOpenFiles::destroyContextualMenu(QObject* p_object) {
@@ -149,7 +181,7 @@ void SourcesAndOpenFiles::destroyContextualMenu(QObject* p_object) {
 void SourcesAndOpenFiles::openSourceCodeFromMenu() {
   QAction* actionSender = dynamic_cast<QAction*>(sender());
   Q_ASSERT(actionSender != nullptr);
-  emit openSourceCodeFromOpenDocumentsRequested(m_actionSourcesMap.value(actionSender));
+  emit openSourceCodeFromContextualMenuRequested(m_actionSourcesMap.value(actionSender));
 }
 
 void SourcesAndOpenFiles::expandTreeView(const QModelIndex& p_index) {

@@ -39,11 +39,8 @@ public:
   QTextDocument* document() const;
   QTextCursor textCursor() const;
   void setTextCursor(const QTextCursor& p_cursor);
-  void turnEditOff();
-  bool hasModificationsNotSaved() const { return f_textedit->hasModificationsNotSaved(); }
 
-public slots:
-  void setText(const QString& p_text);
+  void openNotes(QString const& p_fileName);
 
 protected slots:
   void setPlainText(const QString& p_text);
@@ -68,14 +65,15 @@ protected slots:
   void insertCode(bool checked);
   void transformTextToInternalLink(QTextCursor const& p_cursor);
   void transformInternalLinkBack();
-  void openSourceFromPosition(const QTextCursor& p_cursor);
+  void requesContextualMenuFromCursorPosition(const QTextCursor& p_cursor);
   void editOn();
-  void editOff(bool p_requestSave = true);
-  void setModificationsNotSaved(bool p_value) { f_textedit->setModificationsNotSaved(p_value); }
-  void notesHaveBeenSaved() { setModificationsNotSaved(false); }
+  void editOff();
+  void saveDraft();
+  void updateStackIndexAndRequestSaveNotes();
+  void emitModificationsNotSaved(bool p_saved);
 
 signals:
-  void openSourceRequested(QString);
+  void contextMenuRequested(QString);
   void saveNotesRequested();
   void modificationsNotSaved(bool);
   void notesEditOff(bool);

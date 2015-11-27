@@ -13,14 +13,21 @@
 
 NoteTextEdit::NoteTextEdit(QWidget* p_parent):
   QTextBrowser(p_parent),
-  m_currentCursor(),
-  m_hasModificationsNotSaved(false) {
+  m_currentCursor() {
 
   setMouseTracking(true);
   setOpenExternalLinks(true);
   setUndoRedoEnabled(true);
 
-  connect(this, SIGNAL(undoAvailable(bool)), this, SLOT(setModificationsNotSaved(bool)));
+  connect(this, SIGNAL(textChanged()), this, SLOT(hasModificationsNotSaved()));
+}
+
+void NoteTextEdit::connectTextChanged() {
+  connect(this, SIGNAL(textChanged()), this, SLOT(hasModificationsNotSaved()));
+}
+
+void NoteTextEdit::disconnectTextChanged() {
+  disconnect(this, SIGNAL(textChanged()), this, SLOT(hasModificationsNotSaved()));
 }
 
 bool NoteTextEdit::canInsertFromMimeData(const QMimeData* p_source) const {
@@ -86,6 +93,7 @@ void NoteTextEdit::dropImage(QImage const& p_image, QString const& p_format) {
 
 void NoteTextEdit::mouseMoveEvent(QMouseEvent* p_event) {
   if (!isReadOnly()) {
+    QTextBrowser::mouseMoveEvent(p_event);
     return;
   }
 
@@ -108,38 +116,34 @@ void NoteTextEdit::mouseMoveEvent(QMouseEvent* p_event) {
     }
   }
 
-  QTextEdit::mouseMoveEvent(p_event);
+  QTextBrowser::mouseMoveEvent(p_event);
 }
 
-void NoteTextEdit::mousePressEvent(QMouseEvent* p_event)
-{
+void NoteTextEdit::mousePressEvent(QMouseEvent* p_event) {
   if (p_event->modifiers() == Qt::CTRL) {
     emit transformLinkBackRequested();
     m_currentCursor = QTextCursor();
-    emit openSourceRequested(cursorForPosition(p_event->pos()));
+    emit contextMenuRequested(cursorForPosition(p_event->pos()));
   }
 
-  QTextEdit::mousePressEvent(p_event);
+  QTextBrowser::mousePressEvent(p_event);
 }
 
-void NoteTextEdit::keyReleaseEvent(QKeyEvent* p_event)
-{
+void NoteTextEdit::keyReleaseEvent(QKeyEvent* p_event) {
   if (p_event->key() == Qt::Key_Control) {
     emit transformLinkBackRequested();
     m_currentCursor = QTextCursor();
   }
 
-  QTextEdit::keyReleaseEvent(p_event);
+  QTextBrowser::keyReleaseEvent(p_event);
 }
 
-void NoteTextEdit::mouseDoubleClickEvent(QMouseEvent* p_event)
-{
-  Q_UNUSED(p_event);
+void NoteTextEdit::mouseDoubleClickEvent(QMouseEvent* p_event) {
   emit editNotesRequested();
+
+  QTextBrowser::mouseDoubleClickEvent(p_event);
 }
 
-void NoteTextEdit::setModificationsNotSaved(bool p_value)
-{
-  m_hasModificationsNotSaved = p_value;
-  emit modificationsNotSaved(p_value);
+void NoteTextEdit::hasModificationsNotSaved() {
+  emit modificationsNotSaved(true);
 }

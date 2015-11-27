@@ -11,11 +11,9 @@ class NoteTextEdit: public QTextBrowser {
 public:
   NoteTextEdit(QWidget* p_parent = nullptr);
   void dropImage(QImage const& p_image, QString const& p_format);
-  bool hasModificationsNotSaved() const { return m_hasModificationsNotSaved; }
-  void hasNoModifications() { m_hasModificationsNotSaved = false; document()->clearUndoRedoStacks(); }
 
-public slots:
-  void setModificationsNotSaved(bool p_value);
+  void connectTextChanged();
+  void disconnectTextChanged();
 
 protected:
   bool canInsertFromMimeData(QMimeData const* p_source) const override;
@@ -26,16 +24,18 @@ protected:
   void keyReleaseEvent(QKeyEvent* p_event) override;
   void mouseDoubleClickEvent(QMouseEvent* p_event) override;
 
+protected slots:
+  void hasModificationsNotSaved();
+
 signals:
   void transformToLinkRequested(QTextCursor);
   void transformLinkBackRequested();
-  void openSourceRequested(QTextCursor);
+  void contextMenuRequested(QTextCursor);
   void modificationsNotSaved(bool);
   void editNotesRequested();
 
 private:
   QTextCursor m_currentCursor;
-  bool m_hasModificationsNotSaved;
 };
 
 #endif
