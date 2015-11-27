@@ -36,6 +36,7 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   connect(m_sourcesAndOpenFilesWidget, SIGNAL(openSourceCodeFromSearchRequested(QModelIndex)), this, SLOT(openSourceCodeFromSearch(QModelIndex)));
   connect(m_sourcesAndOpenFilesWidget, SIGNAL(openSourceCodeFromOpenDocumentsRequested(QModelIndex)), this, SLOT(openSourceCodeFromOpenDocuments(QModelIndex)));
   connect(m_sourcesAndOpenFilesWidget, SIGNAL(openSourceCodeFromContextualMenuRequested(QModelIndex)), this, SLOT(openSourceCodeFromContextualMenu(QModelIndex)));
+  connect(m_sourcesAndOpenFilesWidget, SIGNAL(updateFileMenuRequested(QString)), this, SIGNAL(updateFileMenuRequested(QString)));
 
   // Main part
   QSplitter* hsplitter = new QSplitter;

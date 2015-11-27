@@ -20,6 +20,7 @@ protected slots:
   void hideNotesTextEdit();
   void enableSplit();
   void disableSplit();
+  void updateFileMenu(QString const& p_fileName);
 
 private:
   BrowseSourceWidget* m_centralWidget;
@@ -27,6 +28,9 @@ private:
   QAction* m_editNotesOnHorizontalAction;
   QAction* m_editNotesOnVerticalAction;
   QAction* m_editNotesOffAction;
+
+  QAction* m_saveAction;
+  QAction* m_closeAction;
 };
 
 #endif // MAINWINDOW_HXX

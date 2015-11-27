@@ -18,10 +18,10 @@ MainWindow::MainWindow(QWidget* p_parent):
   QMenu* fileMenu = menuBar()->addMenu("File");
 
   // Save current notes
-  QAction* saveAction = new QAction("Save", this);
-  saveAction->setShortcut(QKeySequence::Save);
-  connect(saveAction, SIGNAL(triggered()), m_centralWidget, SLOT(saveNotesFromSource()));
-  fileMenu->addAction(saveAction);
+  m_saveAction = new QAction("Save", this);
+  m_saveAction->setShortcut(QKeySequence::Save);
+  connect(m_saveAction, SIGNAL(triggered()), m_centralWidget, SLOT(saveNotesFromSource()));
+  fileMenu->addAction(m_saveAction);
 
   // Save current notes and close editor
   QAction* saveAndCloseEditAction = new QAction("Save and close editor", this);
@@ -37,10 +37,10 @@ MainWindow::MainWindow(QWidget* p_parent):
   fileMenu->addSeparator();
 
   // Close current source
-  QAction* closeCurrentSourceAction = new QAction("Close", this);
-  closeCurrentSourceAction->setShortcut(QKeySequence(Qt::CTRL+Qt::Key_W));
-  connect(closeCurrentSourceAction, SIGNAL(triggered()), m_centralWidget, SLOT(closeNotesAndSource()));
-  fileMenu->addAction(closeCurrentSourceAction);
+  m_closeAction = new QAction("Close", this);
+  m_closeAction->setShortcut(QKeySequence(Qt::CTRL+Qt::Key_W));
+  connect(m_closeAction, SIGNAL(triggered()), m_centralWidget, SLOT(closeNotesAndSource()));
+  fileMenu->addAction(m_closeAction);
 
   // Close current source
   QAction* closeAllSourceAction = new QAction("Close all", this);
@@ -81,6 +81,7 @@ MainWindow::MainWindow(QWidget* p_parent):
 
   connect(m_centralWidget, SIGNAL(enableSplitRequested()), this, SLOT(enableSplit()));
   connect(m_centralWidget, SIGNAL(disableSplitRequested()), this, SLOT(disableSplit()));
+  connect(m_centralWidget, SIGNAL(updateFileMenuRequested(QString)), this, SLOT(updateFileMenu(QString)));
 
   // Show maximized
   setWindowState(Qt::WindowMaximized);
@@ -155,4 +156,9 @@ void MainWindow::disableSplit() {
   m_editNotesOffAction->setEnabled(false);
   m_editNotesOnHorizontalAction->setEnabled(false);
   m_editNotesOnVerticalAction->setEnabled(false);
+}
+
+void MainWindow::updateFileMenu(QString const& p_fileName) {
+  m_saveAction->setText("Save "+p_fileName);
+  m_closeAction->setText("Close "+p_fileName);
 }

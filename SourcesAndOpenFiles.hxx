@@ -39,12 +39,14 @@ protected slots:
   void destroyContextualMenu(QObject* p_object);
   void openSourceCodeFromMenu();
   void expandTreeView(QModelIndex const& p_index);
+  void requestFileMenuToBeUpdated(QModelIndex const& p_index);
 
 signals:
   void openSourceCodeFromTreeViewRequested(QModelIndex);
   void openSourceCodeFromSearchRequested(QModelIndex);
   void openSourceCodeFromOpenDocumentsRequested(QModelIndex);
   void openSourceCodeFromContextualMenuRequested(QModelIndex);
+  void updateFileMenuRequested(QString);
 
 private:
   void fillSourceModelFromSettingsDirectory(QString const& p_directoryName);

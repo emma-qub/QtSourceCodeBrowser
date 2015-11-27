@@ -200,6 +200,7 @@ protected slots:
 signals:
   void enableSplitRequested();
   void disableSplitRequested();
+  void updateFileMenuRequested(QString);
 
 private:
   QString getFileContent(QString const& p_absoluteFilePath);
