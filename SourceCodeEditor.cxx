@@ -27,7 +27,7 @@ SourceCodeEditor::SourceCodeEditor(QWidget* p_parent):
   m_wholeWordToolButton->setText("\\b");
   m_caseSensitiveToolButton->setText("Aa");
   connect(m_closeToolButton, SIGNAL(clicked()), m_searchWidget, SLOT(hide()));
-  connect(m_searchLineEdit, SIGNAL(textChanged(QString)), this, SLOT(overlineMatch(QString)));
+  connect(m_findLineEdit, SIGNAL(textChanged(QString)), this, SLOT(overlineMatch(QString)));
 
   // Methods Combo Box
   connect(m_methodsComboBox, SIGNAL(activated(int)), this, SLOT(goToLine(int)));
@@ -88,11 +88,11 @@ void SourceCodeEditor::setFocusToSourceEditor() {
 
 void SourceCodeEditor::findTextInSourceEditor() {
   m_searchWidget->show();
-  m_searchLineEdit->setFocus();
+  m_findLineEdit->setFocus();
 
   QTextCursor cursor = m_codeEditor->textCursor();
   cursor.select(QTextCursor::WordUnderCursor);
-  m_searchLineEdit->setText(cursor.selectedText());
+  m_findLineEdit->setText(cursor.selectedText());
 }
 
 void SourceCodeEditor::clear() {
