@@ -36,7 +36,6 @@ SourcesAndOpenFiles::SourcesAndOpenFiles(QWidget* p_parent):
   // Source Tree View
   m_sourcesTreeView->setModel(m_sourceModel);
   m_sourcesTreeView->setRootIndex(m_sourceRootIndex);
-  m_sourcesTreeView->resizeColumnToContents(0);
   m_sourcesTreeView->setHeaderHidden(true);
   connect(m_sourcesTreeView, SIGNAL(doubleClicked(QModelIndex)), this, SIGNAL(openSourceCodeFromTreeViewRequested(QModelIndex)));
   connect(m_sourcesTreeView, SIGNAL(activated(QModelIndex)), this, SIGNAL(openSourceCodeFromTreeViewRequested(QModelIndex)));
