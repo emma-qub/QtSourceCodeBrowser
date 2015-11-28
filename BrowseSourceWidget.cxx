@@ -325,6 +325,11 @@ void BrowseSourceWidget::openSourceCodeFromTreeView(QModelIndex const& p_index) 
   QString fileName = model->fileName(p_index);
   QString absoluteFilePath = model->filePath(p_index);
 
+  QFileInfo fileInfo(absoluteFilePath);
+  if (fileInfo.isDir()) {
+    return;
+  }
+
   m_browseFileInfo.appendNotesAndOpenDocument(absoluteFilePath, fileName);
 
   openDocumentInEditor(fileName, absoluteFilePath);
