@@ -74,25 +74,14 @@ SourcesAndOpenFiles::SourcesAndOpenFiles(QWidget* p_parent):
   m_splitter->setStretchFactor(1, 1);
 }
 
-void SourcesAndOpenFiles::openSourceCodeFromFileName(const QString& p_fileName) {
-  m_searchLineEdit->setText("^"+p_fileName.toLower()+"(_p)?\\.");
-  QMenu contextMenu(tr("Context menu"), this);
-  contextMenu.setStyleSheet("QMenu { menu-scrollable: 1; }");
+/// Public
 
-  for (int k = 0; k < m_sourceSearchView->model()->rowCount(); ++k) {
-    QString sourceFileName = m_sourceSearchView->model()->index(k, 0).data().toString();
-    QAction* action = new QAction(sourceFileName, this);
-    connect(action, SIGNAL(triggered()), this, SLOT(openSourceCodeFromMenu()));
-    contextMenu.addAction(action);
-    if (sourceFileName.endsWith(".cpp")) {
-      action->setIcon(QIcon("../QtSourceCodeBrowser/icons/cppFile.png"));
-    } else if (sourceFileName.endsWith(".h")) {
-      action->setIcon(QIcon("../QtSourceCodeBrowser/icons/hFile.png"));
-    }
-    m_actionSourcesMap.insert(action, m_sourceSearchView->model()->index(k, 0));
-  }
-  contextMenu.exec(cursor().pos());
-  connect(&contextMenu, SIGNAL(destroyed(QObject*)), this, SLOT(destroyContextualMenu(QObject*)));
+void SourcesAndOpenFiles::setSearchLineEditText(const QString& p_text) {
+  m_searchLineEdit->setText(p_text);
+}
+
+void SourcesAndOpenFiles::setFocusToSearchLineEdit() {
+  m_searchLineEdit->setFocus();
 }
 
 QModelIndex SourcesAndOpenFiles::getCurrentIndex() const {
@@ -126,6 +115,9 @@ void SourcesAndOpenFiles::clearOpenDocument() {
   m_openDocumentsModel->closeAllOpenDocument();
 }
 
+
+/// Public slots
+
 void SourcesAndOpenFiles::addOrRemoveStarToOpenDocument(QString const& p_fileName, QString const& p_absoluteFilePath, bool p_add) {
   QModelIndex currentIndex = m_openDocumentsModel->getIndexFromFileNameAndAbsolutePath(p_fileName, p_absoluteFilePath);
   if (currentIndex.isValid() == false) {
@@ -140,6 +132,30 @@ void SourcesAndOpenFiles::addOrRemoveStarToOpenDocument(QString const& p_fileNam
   }
   m_openDocumentsModel->setData(currentIndex, newCurrentOpenDocumentName);
 }
+
+void SourcesAndOpenFiles::openSourceCodeFromFileName(const QString& p_fileName) {
+  m_searchLineEdit->setText("^"+p_fileName.toLower()+"(_p)?\\.");
+  QMenu contextMenu(tr("Context menu"), this);
+  contextMenu.setStyleSheet("QMenu { menu-scrollable: 1; }");
+
+  for (int k = 0; k < m_sourceSearchView->model()->rowCount(); ++k) {
+    QString sourceFileName = m_sourceSearchView->model()->index(k, 0).data().toString();
+    QAction* action = new QAction(sourceFileName, this);
+    connect(action, SIGNAL(triggered()), this, SLOT(openSourceCodeFromMenu()));
+    contextMenu.addAction(action);
+    if (sourceFileName.endsWith(".cpp")) {
+      action->setIcon(QIcon("../QtSourceCodeBrowser/icons/cppFile.png"));
+    } else if (sourceFileName.endsWith(".h")) {
+      action->setIcon(QIcon("../QtSourceCodeBrowser/icons/hFile.png"));
+    }
+    m_actionSourcesMap.insert(action, m_sourceSearchView->model()->index(k, 0));
+  }
+  contextMenu.exec(cursor().pos());
+  connect(&contextMenu, SIGNAL(destroyed(QObject*)), this, SLOT(destroyContextualMenu(QObject*)));
+}
+
+
+/// Protected slots
 
 void SourcesAndOpenFiles::searchFiles(QString const& p_fileName) {
   if (p_fileName.isEmpty() && m_sourcesStackedWidget->currentWidget() != m_sourcesTreeView->parentWidget()) {
@@ -174,6 +190,9 @@ void SourcesAndOpenFiles::expandTreeView(const QModelIndex& p_index) {
   QString absolutePath = p_index.data(Qt::ToolTipRole).toString();
   m_sourcesTreeView->setCurrentIndex(m_sourceModel->index(absolutePath));
 }
+
+
+/// Private
 
 void SourcesAndOpenFiles::fillSourceModelFromSettingsDirectory(QString const& p_directoryName) {
   QDir directory(p_directoryName);

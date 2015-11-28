@@ -21,7 +21,8 @@ class SourcesAndOpenFiles: public QWidget, protected Ui::SourcesAndOpenFiles {
 public:
   explicit SourcesAndOpenFiles(QWidget* p_parent = nullptr);
 
-  void setSearchLineEditText(QString const& p_text) { m_searchLineEdit->setText(p_text); }
+  void setSearchLineEditText(QString const& p_text);
+  void setFocusToSearchLineEdit();
   QModelIndex getCurrentIndex() const;
   void setCurrentIndex(QString const& p_fileName, QString const& p_absoluteFilePath);
   QString getCurrentOpenDocumentAbsolutePath() const;

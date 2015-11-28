@@ -197,6 +197,7 @@ public slots:
   void hideNotesTextEdit();
   void closeNotesAndSource(QString const& p_absoluteFilePath = "");
   void closeAllNotesAndSource();
+  void setFocusToSearchLineEdit();
 
 protected slots:
   void openSourceCodeFromTreeView(QModelIndex const& p_index);

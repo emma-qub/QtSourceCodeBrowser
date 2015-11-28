@@ -315,6 +315,10 @@ void BrowseSourceWidget::closeAllNotesAndSource() {
   emit enableCloseActionRequested(false);
 }
 
+void BrowseSourceWidget::setFocusToSearchLineEdit() {
+  m_sourcesAndOpenFilesWidget->setFocusToSearchLineEdit();
+}
+
 
 /// PROTECTED SLOTS
 

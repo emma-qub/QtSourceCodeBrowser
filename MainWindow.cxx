@@ -60,6 +60,15 @@ MainWindow::MainWindow(QWidget* p_parent):
   fileMenu->addSeparator();
   fileMenu->addAction(quitAction);
 
+  // Edit QMenu
+  QMenu* editMenu = menuBar()->addMenu("Edit");
+
+  // Find source
+  QAction* findSource = new QAction("Find source", this);
+  findSource->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_F));
+  editMenu->addAction(findSource);
+  connect(findSource, SIGNAL(triggered()), m_centralWidget, SLOT(setFocusToSearchLineEdit()));
+
   // Window QMenu
   QMenu* windowMenu = menuBar()->addMenu("Window");
 
