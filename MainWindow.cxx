@@ -20,33 +20,38 @@ MainWindow::MainWindow(QWidget* p_parent):
   // Save current notes
   m_saveAction = new QAction("Save", this);
   m_saveAction->setShortcut(QKeySequence::Save);
+  m_saveAction->setEnabled(false);
   connect(m_saveAction, SIGNAL(triggered()), m_centralWidget, SLOT(saveNotesFromSource()));
   fileMenu->addAction(m_saveAction);
 
   // Save current notes and close editor
-  QAction* saveAndCloseEditAction = new QAction("Save and close editor", this);
-  saveAndCloseEditAction->setShortcut(QKeySequence(Qt::CTRL+Qt::ALT+Qt::Key_S));
-  connect(saveAndCloseEditAction, SIGNAL(triggered()), m_centralWidget, SLOT(saveNotesFromSourceAndCloseEditor()));
-  fileMenu->addAction(saveAndCloseEditAction);
+  m_saveAndCloseEditAction = new QAction("Save and close editor", this);
+  m_saveAndCloseEditAction->setShortcut(QKeySequence(Qt::CTRL+Qt::ALT+Qt::Key_S));
+  m_saveAndCloseEditAction->setEnabled(false);
+  connect(m_saveAndCloseEditAction, SIGNAL(triggered()), m_centralWidget, SLOT(saveNotesFromSourceAndCloseEditor()));
+  fileMenu->addAction(m_saveAndCloseEditAction);
 
   // Save all notes
-  QAction* saveAllAction = new QAction("Save all", this);
-  saveAllAction->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_S));
-  connect(saveAllAction, SIGNAL(triggered()), m_centralWidget, SLOT(saveAllNotes()));
-  fileMenu->addAction(saveAllAction);
+  m_saveAllAction = new QAction("Save all", this);
+  m_saveAllAction->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_S));
+  m_saveAllAction->setEnabled(false);
+  connect(m_saveAllAction, SIGNAL(triggered()), m_centralWidget, SLOT(saveAllNotes()));
+  fileMenu->addAction(m_saveAllAction);
   fileMenu->addSeparator();
 
   // Close current source
   m_closeAction = new QAction("Close", this);
   m_closeAction->setShortcut(QKeySequence(Qt::CTRL+Qt::Key_W));
+  m_closeAction->setEnabled(false);
   connect(m_closeAction, SIGNAL(triggered()), m_centralWidget, SLOT(closeNotesAndSource()));
   fileMenu->addAction(m_closeAction);
 
-  // Close current source
-  QAction* closeAllSourceAction = new QAction("Close all", this);
-  closeAllSourceAction->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_W));
-  connect(closeAllSourceAction, SIGNAL(triggered()), m_centralWidget, SLOT(closeAllNotesAndSource()));
-  fileMenu->addAction(closeAllSourceAction);
+  // Close all sources
+  m_closeAllAction = new QAction("Close all", this);
+  m_closeAllAction->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_W));
+  m_closeAllAction->setEnabled(false);
+  connect(m_closeAllAction, SIGNAL(triggered()), m_centralWidget, SLOT(closeAllNotesAndSource()));
+  fileMenu->addAction(m_closeAllAction);
 
   // Quit action
   QAction* quitAction = new QAction("Quit", this);
@@ -82,6 +87,8 @@ MainWindow::MainWindow(QWidget* p_parent):
   connect(m_centralWidget, SIGNAL(enableSplitRequested()), this, SLOT(enableSplit()));
   connect(m_centralWidget, SIGNAL(disableSplitRequested()), this, SLOT(disableSplit()));
   connect(m_centralWidget, SIGNAL(updateFileMenuRequested(QString)), this, SLOT(updateFileMenu(QString)));
+  connect(m_centralWidget, SIGNAL(enableSaveActionRequested(bool, bool)), this, SLOT(enableSaveAction(bool, bool)));
+  connect(m_centralWidget, SIGNAL(enableCloseActionRequested(bool)), this, SLOT(enableCloseAction(bool)));
 
   // Show maximized
   setWindowState(Qt::WindowMaximized);
@@ -161,4 +168,21 @@ void MainWindow::disableSplit() {
 void MainWindow::updateFileMenu(QString const& p_fileName) {
   m_saveAction->setText("Save "+p_fileName);
   m_closeAction->setText("Close "+p_fileName);
+}
+
+void MainWindow::enableSaveAction(bool p_value, bool p_allSave) {
+  m_saveAction->setEnabled(p_value);
+  m_saveAndCloseEditAction->setEnabled(p_value);
+
+  m_saveAllAction->setEnabled(p_allSave);
+}
+
+void MainWindow::enableCloseAction(bool p_value) {
+  m_closeAction->setEnabled(p_value);
+  m_closeAllAction->setEnabled(p_value);
+
+  if (p_value == false) {
+    enableSaveAction(p_value, p_value);
+    updateFileMenu("");
+  }
 }

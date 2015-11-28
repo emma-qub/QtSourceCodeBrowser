@@ -36,7 +36,6 @@ BrowseSourceWidget::BrowseSourceWidget(QWidget* p_parent):
   connect(m_sourcesAndOpenFilesWidget, SIGNAL(openSourceCodeFromSearchRequested(QModelIndex)), this, SLOT(openSourceCodeFromSearch(QModelIndex)));
   connect(m_sourcesAndOpenFilesWidget, SIGNAL(openSourceCodeFromOpenDocumentsRequested(QModelIndex)), this, SLOT(openSourceCodeFromOpenDocuments(QModelIndex)));
   connect(m_sourcesAndOpenFilesWidget, SIGNAL(openSourceCodeFromContextualMenuRequested(QModelIndex)), this, SLOT(openSourceCodeFromContextualMenu(QModelIndex)));
-  connect(m_sourcesAndOpenFilesWidget, SIGNAL(updateFileMenuRequested(QString)), this, SIGNAL(updateFileMenuRequested(QString)));
 
   // Main part
   QSplitter* hsplitter = new QSplitter;
@@ -149,6 +148,10 @@ void BrowseSourceWidget::addOrRemoveStarToOpenDocument(bool p_value, QString con
   }
 
   m_sourcesAndOpenFilesWidget->addOrRemoveStarToOpenDocument(fileName, absoluteFilePath, p_value);
+
+  bool allSave = m_browseFileInfo.hasNoteNotSaved();
+
+  emit enableSaveActionRequested(p_value, allSave);
 }
 
 NoteRichTextEdit* BrowseSourceWidget::getNotesTextEditFromPosition(int p_position) const {
@@ -261,7 +264,10 @@ void BrowseSourceWidget::closeNotesAndSource(QString const& p_absoluteFilePath) 
   if (currentIndex.isValid()) {
     openSourceCodeFromOpenDocuments(currentIndex);
   } else {
+    // Disable split
     emit disableSplitRequested();
+    // Disable close and save actions
+    emit enableCloseActionRequested(false);
   }
 }
 
@@ -304,6 +310,9 @@ void BrowseSourceWidget::closeAllNotesAndSource() {
 
   // Disable Split
   emit disableSplitRequested();
+
+  // Disable close and save actions
+  emit enableCloseActionRequested(false);
 }
 
 
@@ -321,6 +330,8 @@ void BrowseSourceWidget::openSourceCodeFromTreeView(QModelIndex const& p_index) 
   openDocumentInEditor(fileName, absoluteFilePath);
 
   m_sourcesAndOpenFilesWidget->setCurrentIndex(fileName, absoluteFilePath);
+
+  requestUpdateFileAction();
 }
 
 void BrowseSourceWidget::openSourceCodeFromSearch(QModelIndex const& p_index) {
@@ -332,6 +343,8 @@ void BrowseSourceWidget::openSourceCodeFromSearch(QModelIndex const& p_index) {
   openDocumentInEditor(fileName, absoluteFilePath);
 
   m_sourcesAndOpenFilesWidget->setCurrentIndex(fileName, absoluteFilePath);
+
+  requestUpdateFileAction();
 }
 
 void BrowseSourceWidget::openSourceCodeFromOpenDocuments(QModelIndex const& p_index) {
@@ -341,6 +354,8 @@ void BrowseSourceWidget::openSourceCodeFromOpenDocuments(QModelIndex const& p_in
   m_browseFileInfo.setCurrentNotesAndSourceAbsoluteFilePath(absoluteFilePath);
 
   openDocumentInEditor(fileName, absoluteFilePath);
+
+  requestUpdateFileAction();
 }
 
 void BrowseSourceWidget::openSourceCodeFromContextualMenu(const QModelIndex& p_index) {
@@ -352,6 +367,8 @@ void BrowseSourceWidget::openSourceCodeFromContextualMenu(const QModelIndex& p_i
   openDocumentInEditor(fileName, absoluteFilePath);
 
   m_sourcesAndOpenFilesWidget->setCurrentIndex(fileName, absoluteFilePath);
+
+  requestUpdateFileAction();
 }
 
 void BrowseSourceWidget::updateSaveStateToNotes(bool p_value, QString const& p_absoluteFilePath) {
@@ -364,6 +381,21 @@ void BrowseSourceWidget::updateSaveStateToNotes(bool p_value, QString const& p_a
 
   m_browseFileInfo.setNotesSaveState(!p_value, absoluteFilePath);
   addOrRemoveStarToOpenDocument(p_value, absoluteFilePath);
+}
+
+void BrowseSourceWidget::requestUpdateFileAction() {
+  bool saved = !m_browseFileInfo.isCurrentNotesSaved();
+  bool allSaved = m_browseFileInfo.hasNoteNotSaved();
+
+  emit enableSaveActionRequested(saved, allSaved);
+
+  QString currentFileName = m_browseFileInfo.getCurrentOpenDocumentFileName(m_browseFileInfo.getCurrentOpenDocumentAbsoluteFilePath());
+  if (currentFileName.endsWith("*")) {
+    currentFileName.remove(currentFileName.size()-1, 1);
+  }
+  emit updateFileMenuRequested(currentFileName);
+
+  emit enableCloseActionRequested(true);
 }
 
 

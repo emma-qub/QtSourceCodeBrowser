@@ -10,21 +10,29 @@
 #include "SourceCodeEditor.hxx"
 #include "NoteRichTextEdit.hxx"
 
+#include <QDebug>
+
 class BrowseSourceWidget: public QWidget {
   Q_OBJECT
 
   class BrowseFileInfo {
   public:
+    /// To be removed
+    void displaySaveMap() const { for (auto k: m_noteSaveStates.keys()) { qDebug() << "("+k.first+"," << k.second+")" << m_noteSaveStates.value(k); } }
+    ///
+
     bool isNotesSaved(QString const& p_absoluteFilePath, QString const& p_fileName = "") const {
       QString fileName = p_fileName;
       if (fileName.isEmpty()) {
         fileName = getFileNameFromOpenDocumentAbsolutePath(p_absoluteFilePath);
       }
-      return m_noteSaveStates.value(QPair<QString, QString>(p_absoluteFilePath, fileName), true);
+      auto key = QPair<QString, QString>(p_absoluteFilePath, fileName);
+      Q_ASSERT(m_noteSaveStates.contains(key));
+      return m_noteSaveStates.value(key);
     }
     bool isCurrentNotesSaved() const {
-      QString currentAbsoluteFilePath = getCurrentNotesAbsoluteFilePath();
-      return isNotesSaved(currentAbsoluteFilePath, getCurrentOpenDocumentFileName(currentAbsoluteFilePath));
+      QString currentAbsoluteFilePath = getCurrentOpenDocumentAbsoluteFilePath();
+      return isNotesSaved(currentAbsoluteFilePath);
     }
     void setNotesSaveState(bool p_saved, QString p_absoluteFilePath = "") {
       QString absoluteFilePath = p_absoluteFilePath;
@@ -196,11 +204,14 @@ protected slots:
   void openSourceCodeFromOpenDocuments(QModelIndex const& p_index);
   void openSourceCodeFromContextualMenu(QModelIndex const& p_index);
   void updateSaveStateToNotes(bool p_value, QString const& p_absoluteFilePath = "");
+  void requestUpdateFileAction();
 
 signals:
   void enableSplitRequested();
   void disableSplitRequested();
   void updateFileMenuRequested(QString);
+  void enableSaveActionRequested(bool, bool);
+  void enableCloseActionRequested(bool);
 
 private:
   QString getFileContent(QString const& p_absoluteFilePath);

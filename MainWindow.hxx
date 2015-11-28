@@ -21,6 +21,8 @@ protected slots:
   void enableSplit();
   void disableSplit();
   void updateFileMenu(QString const& p_fileName);
+  void enableSaveAction(bool p_value, bool p_allSave);
+  void enableCloseAction(bool p_value);
 
 private:
   BrowseSourceWidget* m_centralWidget;
@@ -30,7 +32,11 @@ private:
   QAction* m_editNotesOffAction;
 
   QAction* m_saveAction;
+  QAction* m_saveAndCloseEditAction;
+  QAction* m_saveAllAction;
+
   QAction* m_closeAction;
+  QAction* m_closeAllAction;
 };
 
 #endif // MAINWINDOW_HXX

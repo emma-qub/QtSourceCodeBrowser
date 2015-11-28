@@ -68,7 +68,6 @@ SourcesAndOpenFiles::SourcesAndOpenFiles(QWidget* p_parent):
   // Open documents view
   m_openDocumentsView->setModel(m_openDocumentsSortFilterProxyModel);
   connect(m_openDocumentsView, SIGNAL(clicked(QModelIndex)), this, SIGNAL(openSourceCodeFromOpenDocumentsRequested(QModelIndex)));
-  connect(m_openDocumentsView->selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)), this, SLOT(requestFileMenuToBeUpdated(QModelIndex)));
 
   // Splitter
   m_splitter->setStretchFactor(0, 2);
@@ -174,10 +173,6 @@ void SourcesAndOpenFiles::expandTreeView(const QModelIndex& p_index) {
   m_sourcesTreeView->collapseAll();
   QString absolutePath = p_index.data(Qt::ToolTipRole).toString();
   m_sourcesTreeView->setCurrentIndex(m_sourceModel->index(absolutePath));
-}
-
-void SourcesAndOpenFiles::requestFileMenuToBeUpdated(const QModelIndex& p_index) {
-  emit updateFileMenuRequested(p_index.data().toString());
 }
 
 void SourcesAndOpenFiles::fillSourceModelFromSettingsDirectory(QString const& p_directoryName) {
