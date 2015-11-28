@@ -455,6 +455,8 @@ void BrowseSourceWidget::openDocumentInEditor(QString const& p_fileName, QString
     openNotes(notesAbsoluteFilePath);
   }
 
+  m_sourceCodeEditorWidget->setFocusToSourceEditor();
+
   emit enableSplitRequested();
 }
 

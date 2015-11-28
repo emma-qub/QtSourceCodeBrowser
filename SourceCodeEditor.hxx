@@ -14,6 +14,7 @@ public:
   virtual ~SourceCodeEditor();
 
   void openSourceCode(QString const& p_content, CodeEditor::FileType p_fileType);
+  void setFocusToSourceEditor();
 
 public slots:
   void clear();

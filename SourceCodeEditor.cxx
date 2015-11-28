@@ -53,6 +53,10 @@ void SourceCodeEditor::openSourceCode(QString const& p_content, CodeEditor::File
   m_codeEditor->openSourceCode(p_content, p_fileType);
 }
 
+void SourceCodeEditor::setFocusToSourceEditor() {
+  m_codeEditor->setFocus();
+}
+
 void SourceCodeEditor::clear() {
   m_codeEditor->clear(); m_methodsComboBox->clear();
 }
