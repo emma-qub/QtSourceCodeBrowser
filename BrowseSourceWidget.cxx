@@ -319,6 +319,10 @@ void BrowseSourceWidget::setFocusToSearchLineEdit() {
   m_sourcesAndOpenFilesWidget->setFocusToSearchLineEdit();
 }
 
+void BrowseSourceWidget::findTextInSourceEditor() {
+  m_sourceCodeEditorWidget->findTextInSourceEditor();
+}
+
 
 /// PROTECTED SLOTS
 

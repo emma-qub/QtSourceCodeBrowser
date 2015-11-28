@@ -139,7 +139,6 @@ void CodeEditor::openSourceCode(const QString& p_content, FileType p_fileType) {
 
   //QTextCursor cursor = textCursor();
   int ind = -1;
-  methodName.setPatternOptions(QRegularExpression::DotMatchesEverythingOption | QRegularExpression::InvertedGreedinessOption);
   QRegularExpressionMatchIterator it = methodName.globalMatch(content);
   while (it.hasNext()) {
     QRegularExpressionMatch match = it.next();

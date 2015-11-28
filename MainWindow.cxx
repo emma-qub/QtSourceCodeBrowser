@@ -64,10 +64,16 @@ MainWindow::MainWindow(QWidget* p_parent):
   QMenu* editMenu = menuBar()->addMenu("Edit");
 
   // Find source
-  QAction* findSource = new QAction("Find source", this);
-  findSource->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_F));
-  editMenu->addAction(findSource);
-  connect(findSource, SIGNAL(triggered()), m_centralWidget, SLOT(setFocusToSearchLineEdit()));
+  QAction* findSourceAction = new QAction("Find source", this);
+  findSourceAction->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_F));
+  editMenu->addAction(findSourceAction);
+  connect(findSourceAction, SIGNAL(triggered()), m_centralWidget, SLOT(setFocusToSearchLineEdit()));
+
+  // Find
+  QAction* findAction = new QAction("Find", this);
+  findAction->setShortcut(QKeySequence::Find);
+  editMenu->addAction(findAction);
+  connect(findAction, SIGNAL(triggered()), m_centralWidget, SLOT(findTextInSourceEditor()));
 
   // Window QMenu
   QMenu* windowMenu = menuBar()->addMenu("Window");

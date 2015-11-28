@@ -147,12 +147,14 @@ NoteRichTextEdit::NoteRichTextEdit(QWidget* p_parent):
 
   // text foreground color
   QPixmap pix(16, 16);
+  f_fgcolor->setFixedHeight(27);
   pix.fill(QApplication::palette().foreground().color());
   f_fgcolor->setIcon(pix);
 
   connect(f_fgcolor, SIGNAL(clicked()), this, SLOT(textFgColor()));
 
   // text background color
+  f_bgcolor->setFixedHeight(27);
   pix.fill(QApplication::palette().background().color());
   f_bgcolor->setIcon(pix);
 

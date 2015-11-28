@@ -198,6 +198,7 @@ public slots:
   void closeNotesAndSource(QString const& p_absoluteFilePath = "");
   void closeAllNotesAndSource();
   void setFocusToSearchLineEdit();
+  void findTextInSourceEditor();
 
 protected slots:
   void openSourceCodeFromTreeView(QModelIndex const& p_index);

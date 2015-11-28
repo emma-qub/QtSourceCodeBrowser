@@ -11,12 +11,25 @@ SourceCodeEditor::SourceCodeEditor(QWidget* p_parent):
   font.setFixedPitch(true);
   font.setPointSize(10);
 
+  // Code Editor
   m_codeEditor->setFont(font);
   m_codeEditor->setReadOnly(true);
   m_codeEditor->setTextInteractionFlags(m_codeEditor->textInteractionFlags() | Qt::TextSelectableByKeyboard);
   m_highlighters = new Highlighter(m_codeEditor->document());
-
   connect(m_codeEditor, SIGNAL(methodListReady(QMap<int,QString>)), this, SLOT(fillMethodsComboBox(QMap<int,QString>)));
+
+  // Search Widget
+  m_searchWidget->hide();
+  m_closeToolButton->setText("X");
+  m_nextToolButton->setText(">");
+  m_previousToolButton->setText("<");
+  m_regExpToolButton->setText("[]");
+  m_wholeWordToolButton->setText("\\b");
+  m_caseSensitiveToolButton->setText("Aa");
+  connect(m_closeToolButton, SIGNAL(clicked()), m_searchWidget, SLOT(hide()));
+  connect(m_searchLineEdit, SIGNAL(textChanged(QString)), this, SLOT(overlineMatch(QString)));
+
+  // Methods Combo Box
   connect(m_methodsComboBox, SIGNAL(activated(int)), this, SLOT(goToLine(int)));
 }
 
@@ -49,12 +62,37 @@ void SourceCodeEditor::goToLine(int p_index) {
   }
 }
 
+void SourceCodeEditor::overlineMatch(const QString& p_match) {
+  QRegExp regExp(p_match);
+  QList<QTextEdit::ExtraSelection> extraSelections;
+  m_codeEditor->moveCursor(QTextCursor::Start);
+  QColor markColor("#E99B63");
+
+  while (m_codeEditor->find(regExp)) {
+    QTextEdit::ExtraSelection selection;
+    selection.format.setBackground(markColor);
+    selection.cursor = m_codeEditor->textCursor();
+    extraSelections.append(selection);
+  }
+
+  m_codeEditor->setExtraSelections(extraSelections);
+}
+
 void SourceCodeEditor::openSourceCode(QString const& p_content, CodeEditor::FileType p_fileType) {
   m_codeEditor->openSourceCode(p_content, p_fileType);
 }
 
 void SourceCodeEditor::setFocusToSourceEditor() {
   m_codeEditor->setFocus();
+}
+
+void SourceCodeEditor::findTextInSourceEditor() {
+  m_searchWidget->show();
+  m_searchLineEdit->setFocus();
+
+  QTextCursor cursor = m_codeEditor->textCursor();
+  cursor.select(QTextCursor::WordUnderCursor);
+  m_searchLineEdit->setText(cursor.selectedText());
 }
 
 void SourceCodeEditor::clear() {
