@@ -66,6 +66,7 @@ SourcesAndOpenFiles::SourcesAndOpenFiles(QWidget* p_parent):
 
   // Open documents view
   m_openDocumentsView->setModel(m_openDocumentsSortFilterProxyModel);
+  m_openDocumentsView->setEditTriggers(QAbstractItemView::NoEditTriggers);
   connect(m_openDocumentsView, SIGNAL(clicked(QModelIndex)), this, SIGNAL(openSourceCodeFromOpenDocumentsRequested(QModelIndex)));
 
   // Splitter
