@@ -185,9 +185,9 @@ void SourcesAndOpenFiles::openSourceCodeFromMenu() {
 }
 
 void SourcesAndOpenFiles::expandTreeView(const QModelIndex& p_index) {
-  m_searchLineEdit->clear();
-  m_sourcesTreeView->collapseAll();
   QString absolutePath = p_index.data(Qt::ToolTipRole).toString();
+
+  m_searchLineEdit->clear();
   m_sourcesTreeView->setCurrentIndex(m_sourceModel->index(absolutePath));
 }
 
