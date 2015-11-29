@@ -25,9 +25,13 @@ protected slots:
   void fillMethodsComboBox(const QMap<int, QString>& p_methodsAndIndex);
   void goToLine(int p_index);
   void overlineMatch(QString const& p_match);
+  void moveCursorToNextMatch();
+  void moveCursorToPreviousMatch();
 
 private:
   Highlighter* m_highlighters;
+  QVector<int> m_matchPositions;
+  int m_currentMatchPosition;
 };
 
 #endif // SOURCECODEEDITOR_H

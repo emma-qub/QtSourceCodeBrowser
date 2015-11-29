@@ -1,5 +1,7 @@
 #include "SourceCodeEditor.hxx"
 
+#include <QDebug>
+
 SourceCodeEditor::SourceCodeEditor(QWidget* p_parent):
   QWidget(p_parent),
   m_highlighters() {
@@ -20,12 +22,15 @@ SourceCodeEditor::SourceCodeEditor(QWidget* p_parent):
 
   // Search Widget
   m_searchWidget->hide();
-  m_closeToolButton->setText("X");
   m_nextToolButton->setText(">");
+  connect(m_nextToolButton, SIGNAL(clicked()), this, SLOT(moveCursorToNextMatch()));
+  connect(m_findLineEdit, SIGNAL(returnPressed()), this, SLOT(moveCursorToNextMatch()));
   m_previousToolButton->setText("<");
+  connect(m_nextToolButton, SIGNAL(clicked()), this, SLOT(moveCursorToPreviousMatch()));
   m_regExpToolButton->setText("[]");
-  m_wholeWordToolButton->setText("\\b");
   m_caseSensitiveToolButton->setText("Aa");
+  m_wholeWordToolButton->setText("\\b");
+  m_closeToolButton->setText("X");
   connect(m_closeToolButton, SIGNAL(clicked()), m_searchWidget, SLOT(hide()));
   connect(m_findLineEdit, SIGNAL(textChanged(QString)), this, SLOT(overlineMatch(QString)));
 
@@ -63,19 +68,65 @@ void SourceCodeEditor::goToLine(int p_index) {
 }
 
 void SourceCodeEditor::overlineMatch(const QString& p_match) {
-  QRegExp regExp(p_match);
+  Qt::CaseSensitivity caseSensitivity = Qt::CaseInsensitive;
+  if (m_caseSensitiveToolButton->isChecked()) {
+    caseSensitivity = Qt::CaseSensitive;
+  }
+
+  QString match = p_match;
+  if (m_wholeWordToolButton->isChecked()) {
+    match = "\\b"+match+"\\b";
+  }
+
+  QRegExp regExp(match, caseSensitivity);
   QList<QTextEdit::ExtraSelection> extraSelections;
   m_codeEditor->moveCursor(QTextCursor::Start);
-  QColor markColor("#E99B63");
+  QColor markColor = QColor(Qt::yellow).lighter(150);
+
+  m_matchPositions.clear();
+  m_currentMatchPosition = -1;
+
+  int previousCursorPosition = m_codeEditor->textCursor().position();
 
   while (m_codeEditor->find(regExp)) {
+    QTextCursor cursor = m_codeEditor->textCursor();
+
     QTextEdit::ExtraSelection selection;
     selection.format.setBackground(markColor);
     selection.cursor = m_codeEditor->textCursor();
     extraSelections.append(selection);
+
+    m_matchPositions << cursor.position();
   }
 
   m_codeEditor->setExtraSelections(extraSelections);
+
+  for (int currentPosition: m_matchPositions) {
+    if (previousCursorPosition < currentPosition) {
+      m_currentMatchPosition = qMax(0, currentPosition-1);
+      moveCursorToNextMatch();
+    }
+  }
+}
+
+void SourceCodeEditor::moveCursorToNextMatch() {
+  m_currentMatchPosition = (m_currentMatchPosition+1)%m_matchPositions.size();
+
+  int currentPosition = m_matchPositions.at(m_currentMatchPosition);
+  QTextCursor cursor = m_codeEditor->textCursor();
+  cursor.setPosition(currentPosition);
+  cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::KeepAnchor, m_findLineEdit->text().length());
+  m_codeEditor->setTextCursor(cursor);
+}
+
+void SourceCodeEditor::moveCursorToPreviousMatch() {
+  m_currentMatchPosition = (m_currentMatchPosition-1)%m_matchPositions.size();
+
+  int currentPosition = m_matchPositions.at(m_currentMatchPosition);
+  QTextCursor cursor = m_codeEditor->textCursor();
+  cursor.setPosition(currentPosition);
+  cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::KeepAnchor, m_findLineEdit->text().length());
+  m_codeEditor->setTextCursor(cursor);
 }
 
 void SourceCodeEditor::openSourceCode(QString const& p_content, CodeEditor::FileType p_fileType) {
@@ -92,7 +143,10 @@ void SourceCodeEditor::findTextInSourceEditor() {
 
   QTextCursor cursor = m_codeEditor->textCursor();
   cursor.select(QTextCursor::WordUnderCursor);
-  m_findLineEdit->setText(cursor.selectedText());
+  QString selectedText = cursor.selectedText();
+  if (QRegularExpression("\\w+").match(selectedText).hasMatch()) {
+    m_findLineEdit->setText(selectedText);
+  }
 }
 
 void SourceCodeEditor::clear() {

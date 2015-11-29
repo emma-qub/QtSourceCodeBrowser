@@ -78,7 +78,14 @@
        </widget>
       </item>
       <item>
-       <widget class="QToolButton" name="m_caseSensitiveToolButton">
+       <widget class="Line" name="line">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="m_regExpToolButton">
         <property name="text">
          <string/>
         </property>
@@ -88,7 +95,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QToolButton" name="m_regExpToolButton">
+       <widget class="QToolButton" name="m_caseSensitiveToolButton">
         <property name="text">
          <string/>
         </property>
@@ -104,6 +111,13 @@
         </property>
         <property name="checkable">
          <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line_2">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
         </property>
        </widget>
       </item>
