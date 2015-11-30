@@ -114,17 +114,17 @@ Highlighter::Highlighter(QTextDocument* parent):
     highlightingRules.append(rule);
 
     defineFormat.setForeground(Qt::darkBlue);
-    rule.pattern = QRegExp("^#define\\s+[A-Z_]+");
+    rule.pattern = QRegExp("^#\\s*define\\s+[A-Z_]+");
     rule.format = defineFormat;
     highlightingRules.append(rule);
 
     includeFormat.setForeground(Qt::darkGreen);
-    rule.pattern = QRegExp("^#include\\s+.+");
+    rule.pattern = QRegExp("^#\\s*include\\s+.+");
     rule.format = includeFormat;
     highlightingRules.append(rule);
 
     macroFormat.setForeground(Qt::darkBlue);
-    rule.pattern = QRegExp("^#[^\\s]+");
+    rule.pattern = QRegExp("^#\\s*\\w+");
     rule.format = macroFormat;
     highlightingRules.append(rule);
 
