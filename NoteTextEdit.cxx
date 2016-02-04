@@ -110,7 +110,7 @@ void NoteTextEdit::mouseMoveEvent(QMouseEvent* p_event) {
     }
   }
   else {
-    if (m_currentCursor != QTextCursor()) {
+    if (!m_currentCursor.isNull()) {
       emit transformLinkBackRequested();
       m_currentCursor = QTextCursor();
     }

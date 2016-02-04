@@ -1,6 +1,5 @@
 #include "BrowseSourceWidget.hxx"
 
-#include <QSettings>
 #include <QHBoxLayout>
 #include <QSplitter>
 #include <QTextStream>
